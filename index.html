@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="bs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eksterna matura</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --surface-dark: #1e293b;
+            --sidebar-bg: #0b1120;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --accent: #10b981;
+            --danger: #ef4444;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        * { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        body { margin: 0; display: flex; height: 100vh; background: var(--bg-dark); color: var(--text-main); overflow: hidden; }
+
+        /* Sidebar Uljepšan */
+        #sidebar {
+            width: 320px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 10px 0 30px rgba(0,0,0,0.2);
+        }
+
+        #sidebar h2 { 
+            font-size: 1.4rem; 
+            margin-bottom: 30px; 
+            color: var(--white); 
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            padding-left: 10px;
+        }
+
+        #sidebar ul { list-style: none; padding: 0; margin: 0; }
+        #sidebar li { 
+            padding: 14px 18px; 
+            cursor: pointer; 
+            border-radius: 12px; 
+            margin-bottom: 8px; 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            border: 1px solid transparent;
+        }
+        
+        #sidebar li:hover { 
+            background: rgba(59, 130, 246, 0.1); 
+            color: var(--primary); 
+            transform: translateX(5px);
+            border-color: rgba(59, 130, 246, 0.2);
+        }
+        
+        #sidebar li.active { 
+            background: var(--primary); 
+            color: white; 
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        hr { border: 0; border-top: 1px solid var(--border); margin: 20px 10px; }
+
+        /* Main Content */
+        #main-content { flex: 1; padding: 60px; display: flex; flex-direction: column; align-items: center; overflow-y: auto; position: relative; }
+        
+        .quiz-card {
+            max-width: 850px;
+            width: 100%;
+            background: var(--surface-dark);
+            padding: 50px;
+            border-radius: 30px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        #progress { font-size: 0.8rem; color: var(--primary); font-weight: 800; margin-bottom: 15px; letter-spacing: 1px; }
+        #question-text { font-size: 1.5rem; margin-bottom: 35px; font-weight: 600; line-height: 1.4; color: #fff; }
+        
+        .option-btn {
+            display: block; width: 100%; padding: 20px 25px; margin-bottom: 15px;
+            border: 1px solid #334155; border-radius: 16px; background: rgba(255,255,255,0.03);
+            color: var(--text-main); text-align: left; cursor: pointer; font-size: 1.05rem;
+            transition: all 0.2s ease;
+        }
+        .option-btn:hover:not(:disabled) { background: rgba(255,255,255,0.08); border-color: var(--primary); transform: scale(1.01); }
+        
+        .correct { background: var(--accent) !important; border-color: var(--accent) !important; color: white; font-weight: 600; }
+        .incorrect { background: var(--danger) !important; border-color: var(--danger) !important; color: white; font-weight: 600; }
+
+        /* Rezultati UI */
+        .results-box { text-align: center; }
+        .results-box h2 { font-size: 2rem; margin-bottom: 20px; }
+        .score-container { display: flex; justify-content: center; gap: 20px; margin-bottom: 40px; }
+        .score-card { padding: 25px; border-radius: 20px; min-width: 150px; border: 1px solid var(--border); }
+        .score-card.good { background: rgba(16, 185, 129, 0.1); color: var(--accent); }
+        .score-card.bad { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+        .score-num { font-size: 2.5rem; font-weight: 800; display: block; }
+        
+        .action-btn {
+            padding: 16px 35px; border-radius: 14px; border: none; font-weight: 700; cursor: pointer;
+            transition: 0.2s; margin: 10px; font-size: 1rem;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-secondary { background: #334155; color: white; }
+        .action-btn:hover { opacity: 0.9; transform: translateY(-2px); }
+
+        #mobile-nav { display: none; background: var(--sidebar-bg); padding: 20px; border-bottom: 1px solid var(--border); width: 100%; position: sticky; top:0; z-index:100; justify-content: space-between; align-items: center;}
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            #mobile-nav { display: flex; }
+            #sidebar { position: fixed; top: 75px; left: 0; width: 100%; height: calc(100vh - 75px); z-index: 99; transform: translateX(-100%); padding-top: 20px; }
+            #sidebar.show { transform: translateX(0); }
+            #main-content { padding: 30px 15px; }
+            .quiz-card { padding: 30px 20px; border-radius: 20px; }
+            #question-text { font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="mobile-nav">
+        <span style="font-weight: 800; color: var(--primary); font-size: 1.2rem;">BBM Kviz</span>
+        <button onclick="toggleSidebar()" style="background: none; border: 1px solid var(--primary); color: var(--primary); padding: 8px 15px; border-radius: 10px;">MENI ☰</button>
+    </div>
+
+    <nav id="sidebar">
+        <h2>Predmeti</h2>
+        <ul>
+            <li onclick="loadQuiz('Kiraet')">Kiraet</li>
+            <li onclick="loadQuiz('Akaid')">Akaid</li>
+            <li onclick="loadQuiz('Fikh')">Fikh</li>
+            <li onclick="loadQuiz('Ahlak')">Ahlak</li>
+            <li onclick="loadQuiz('Tefsir')">Tefsir</li>
+            <li onclick="loadQuiz('Hadis')">Hadis</li>
+            <li onclick="loadQuiz('Povijest Islama')">Povijest Islama</li>
+            <hr>
+            <li onclick="loadQuiz('Bosanski Jezik')">Bosanski jezik</li>
+            <li onclick="loadQuiz('Arapski Jezik')">Arapski jezik</li>
+            <li onclick="loadQuiz('Engleski Jezik')">Engleski jezik</li>
+            <hr>
+            <li onclick="loadQuiz('Historija')">Historija</li>
+            <li onclick="loadQuiz('Geografija')">Geografija</li>
+            <li onclick="loadQuiz('Filozofija')">Filozofija</li>
+            <li onclick="loadQuiz('Psihologija')">Psihologija</li>
+            <li onclick="loadQuiz('Logika')">Logika</li>
+            <li onclick="loadQuiz('Sociologija')">Sociologija</li>
+            <hr>
+            <li onclick="loadQuiz('Matematika')">Matematika</li>
+            <li onclick="loadQuiz('Fizika')">Fizika</li>
+            <li onclick="loadQuiz('Hemija')">Hemija</li>
+            <li onclick="loadQuiz('Biologija')">Biologija</li>
+            <hr>
+            <li onclick="loadQuiz('Informatika')">Informatika</li>
+            <li onclick="loadQuiz('Tjelesni odgoj')">Tjelesni odgoj</li>
+            <li onclick="loadQuiz('Demokratija')">Demokratija</li>
+        </ul>
+    </nav>
+	
+
+    <main id="main-content">
+        <div class="quiz-card" id="quiz-container">
+            <!-- UI POČETAK -->
+            <div id="intro-ui" style="text-align: center;">
+                <h1 style="font-size: 2.2rem; font-weight: 800; margin-bottom: 10px;">Priprema za eksternu maturu</h1>
+                <p style="color: var(--text-muted); margin-bottom: 30px;">Izaberite jedan od predmeta iz lijeve trake kako biste započeli vježbanje.</p>
+                <div style="background: rgba(59, 130, 246, 0.05); padding: 20px; border-radius: 20px; border: 1px dashed var(--primary);">
+                    <p style="margin: 0; font-size: 0.9rem;">Sistem automatski prepoznaje greške i nudi vam njihovo ponavljanje dok ne postignete 100% uspješnost.</p>
+                </div>
+            </div>
+
+            <!-- UI KVIZ -->
+            <div id="quiz-ui" style="display:none;">
+                <div id="progress">Pitanje 1 od 50</div>
+                <div id="question-text">Učitavanje...</div>
+                <div id="options-container"></div>
+            </div>
+
+            <!-- UI REZULTATI (NOVO) -->
+            <div id="results-ui" class="results-box" style="display:none;">
+                <h2 id="results-title">Kraj kruga!</h2>
+                <div class="score-container">
+                    <div class="score-card good">
+                        Tačno
+                        <span class="score-num" id="correct-score">0</span>
+                    </div>
+                    <div class="score-card bad">
+                        Netačno
+                        <span class="score-num" id="incorrect-score">0</span>
+                    </div>
+                </div>
+                <div id="final-actions">
+                    <!-- Dinamički se pune dugmad ovdje -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const quizData = {
+            // OVDE DODAJETE DATA BLOKOVE KAO I DO SADA
+		"Kiraet": [
+            { q: "Ishodišta glasova ukupno ima:", o: ["13", "12", "17", "18"], a: 2 },
+            { q: "Meddun munfesil će biti:", o: ["Kada iza obične dužine u istoj riječi dođe hemze", "Kada iza obične dužine na početku sljedeće riječi dođe hemze", "Kada iza obične dužine dođe stalni sakin u istoj riječi", "Kada iza obične dužine na početku sljedeće riječi dođe stalni sakin"], a: 1 },
+            { q: "Meddun muttesil će biti:", o: ["Kada iza obične dužine dođe stalni sakin u istoj riječi", "Kada iza obične dužine u istoj riječi dođe hemze", "Kada iza obične dužine na početku sljedeće riječi dođe stalni sakin", "Kada iza obične dužine na početku sljedeće riječi dođe hemze"], a: 1 },
+            { q: "Meddun lazim će biti:", o: ["Kada iza obične dužine na početku sljedeće riječi dođe hemze", "Kada iza obične dužine u istoj riječi dođe hemze", "Kada iza obične dužine na početku sljedeće riječi dođe stalni sakin", "Kada iza obične dužine dođe stalni sakin u istoj riječi"], a: 0 },
+            { q: "Meddun muttesil treba da traje:", o: ["Dvije obične dužine", "Tri obične dužine", "Jedna obična dužina", "Četiri obične dužine"], a: 3 },
+            { q: "Manjkavi idgam je:", o: ["Idgamun bila gunneh", "Idgamu mislejn", "Idgamu mutekaribejn", "Idgamun me ̒ a-l-gunneh"], a: 3 },
+            { q: "Idgamu mutedžanisejn je:", o: ["Uklapanje sa nazalom", "Uklapanje bez nazala", "Slivanje dvaju srodnih glasova", "Slivanje dvaju istih glasova"], a: 2 },
+            { q: "Idgamun bila gunneh je:", o: ["Uklapanje bez nazala", "Uklapanje sa nazalom", "Slivanje dvaju istih glasova", "Slivanje dvaju srodnih glasova"], a: 0 },
+            { q: "Ihfa je:", o: ["Isticanje ishodišta glasa nun", "Slivanje glasa nun", "Skrivanje ishodišta glasa nun", "Skrivanje ishodišta glasa mim"], a: 2 },
+            { q: "Izhar je:", o: ["Odvajanje i isticanje glasa nun", "Skrivanje ishodišta glasa nun", "Skrivanje ishodišta glasa mim", "Odvajanje i isticanje glasa mim"], a: 0 },
+            { q: "Iklab je:", o: ["Uklapanje glasa mim sakina u glas ba", "Uklapanje glasa ba u glas mim sakin", "Uklapanje glasa nun sakina u glas ba", "Uklapanje glasa nun sakina u glas mim"], a: 2 },
+            { q: "Idgamu mislejn je:", o: ["Slivanje dvaju istih glasova", "Slivanje dvaju srodnih glasova", "Slivanje dvaju bliskih glasova", "Slivanje glasova sa nazalom"], a: 0 },
+            { q: "Idgamun bila gunneh će biti:", o: ["Kada nakon glasa nun sakina dođu glasovi ja, mim, nun i vav", "Kada nakon glasa mim sakina dođu glasovi nun i vav", "Kada nakon glasa nun sakina dođe riječ koja počinje glasovima lam i ra", "Kada nakon glasa lam dođe glas ra"], a: 2 },
+            { q: "Izhar će biti:", o: ["Kada nakon glasa mim sakina dođu glasovi elif, ajn i gajn", "Kada nakon glasa nun sakina dođe jedan od šest grlenih glasova (b i d su identični u izvoru)", "Kada nakon glasa nun sakina dođe riječ koja počinje sa jednim od šest grlenih glasova", "Kada nakon glasa nun sakina dođe jedan od šest grlenih glasova"], a: 1 },
+            { q: "Idgamun me ̒ a-l-gunneh će biti:", o: ["Kada nakon glasa nun sakina dođe riječ koja počinje sa jednim od četiri glasa: ja, mim, nun, vav", "Kada nakon glasa nun sakina dođe jedan od četiri glasa: ja, mim, nun, vav", "Kada nakon glasa nun sakina dođe glas lam ili ra", "Kada nakon mim sakina dođe glas ba"], a: 1 },
+            { q: "Iḥfā ̓ un šefevijjun će biti:", o: ["Kada nakon glasa nun sakina dođe glas ba", "Kada nakon glasa ba sakina dođe glas mim", "Kada nakon glasa mim sakina dođe riječ koja počinje sa glasom ba", "Kada nakon mim sakina dođe glas ba"], a: 3 },
+            { q: "Glasovi kalkale su:", o: ["ت ض ب ط ق", "ق ج ض ط د", "ج  ب  ط  ق  د", "ب  د  ح  غ  ق"], a: 2 },
+            { q: "Pod pravilo Idgamu mutedžanisejn podliježu sljedeći glasovi:", o: ["و  م  ب", "ر ك  ق", "ظ  ث  ذ", "ذ  ز  ظ"], a: 2 },
+            { q: "Pod pravilo Idgamu mutekaribejni podliježu sljedeći glasovi:", o: ["ش س ك  ق", "ظ  ط  ت  د", "م ق  ك  ف", "ر  ل  ك  ق"], a: 3 },
+            { q: "Koji glasovi ne podliježu pod pravilo Ihfa:", o: ["ز  ق ف", "م  ل ر", "ظ ص ض", "س د ذ"], a: 1 },
+            { q: "Kada nakon glasa nun sakin dođe glas ba primjenjuje se pravilo:", o: ["Iklab", "Izhar", "Ihfa", "Kalkala"], a: 0 },
+            { q: "Kada nakon glasa nun sakina dođe riječ koja počinje glasovima lam i ra primjenjuje se:", o: ["Idgamun me ̒ a-l-gunneh", "Idgamun bila gunneh", "Idgamu mislejn", "Idgamu mutedžanisejn"], a: 1 },
+            { q: "Lična zamjenica hu se izgovara dugo:", o: ["Ukoliko prije nje dođe dugi vokal", "Ukoliko prije nje dođe kratki vokal", "Ukoliko prije nje dođe sukun", "Ukoliko poslije nje dođe kratki vokal"], a: 1 },
+            { q: "Idgamu mutekaribejn je:", o: ["Slivanje dvaju istih glasova", "Slivanje dvaju sličnih glasova", "Slivanje dvaju srodnih glasova", "Slivanje dvaju bliskih glasova"], a: 3 },
+            { q: "Glas ت (ta) se može uklapati u sljedeće glasove:", o: ["ذ  ث", "ط  د", "ظ ب", "ك  ح"], a: 1 },
+            { q: "Naš imam u Kiraetu je:", o: ["Nafi b. Abdurahman b. Ebi Nuajm el-Lejsi el-Medeni", "Ebu Bekr Asim b. Ebin-Nedžud Behdele el-Esedi el-Kufi", "Ebu Ammar Hamza b. Habib el-Kufi", "Ebu Mensur el-Maturidi"], a: 1 },
+            { q: "Definicija Tedžvida je:", o: ["Melodično učenje Kur`ana a.š.", "Nauka koja nas upućuje na pravilno i razgovjetno učenje Kur`ana a.š.", "Memorisanje Kur`ana a.š.", "Nijedno navedeno"], a: 1 },
+            { q: "Kur`an i Kerim sadrži tačan broj poglavlja i sura, i to:", o: ["113", "116", "114", "104"], a: 2 },
+            { q: "Sedžda-Tilavet podrazumijeva:", o: ["Znak gdje treba učiniti sedždu prilikom učenja ili slušanja dotičnog ajeta", "Učiniti sedždu nakon pogrešnog učenja određenog ajeta", "Učiniti sedždu iz zahvalnosti prema Gospodaru Svjetova", "Nakon propuštanja vadžiba u namazu"], a: 0 },
+            { q: "Broj Tilavet-Sedždi u Kur`an i Kerimu po našem mezhebu Ebu Hanifi je:", o: ["13", "14", "15", "Nijedno navedeno"], a: 1 },
+            { q: "Kur`anska sura koja ne počinje Bismillom je:", o: ["El-Enfal", "El-Ahzab", "Et-Tevba", "Et-Tegabun"], a: 2 },
+            { q: "Krupni harfovi iznad kojih se fetha ili tenvin „en“ izgovaraju kao kratko „a“ su:", o: ["ر ع غ ق ط ص ض", "خ ص ط ض ق ظ ح", "ظ ق ص ض ط غ خ", "Nijedno navedeno"], a: 2 },
+            { q: "Tenvin ili nunacija ima značenje:", o: ["Kratkog vokala", "Dugog vokala", "Udvostručenog znaka za kratki vokal", "Dvostruko dugog vokala"], a: 2 },
+            { q: "Sekteh je:", o: ["Zadržavanje glasa „N“ kada ima na sebi teštid", "Skrivanje glasa „N“ kada ima na sebi sukun", "Presjecanje glasa i zadržavanje daha", "Znak koji određuje kraj džuza"], a: 2 },
+            { q: "Lafzatullah (riječ Allah) može se izgovarati:", o: ["Krupno", "Tanko", "Krupno i tanko zavisno od glasa koji je ispred", "Nijedno navedeno"], a: 2 },
+            { q: "Uzročnici neobične dužine mogu biti:", o: ["Teštid", "Sukun", "Hemze, zatim Sukun Lazim i Sukun Arid", "Nijedno navedeno"], a: 2 },
+            { q: "Neobična dužina čiji je uzročnik hemze:", o: ["Meddu Lazim", "Meddu Lin", "Meddu Muttesil", "Nijedno navedeno"], a: 2 },
+            { q: "Prepoznaj IDGAM MEAL-GUNNEH na osnovu riječi:", o: ["من هدى يعمل من نور من", "尼亚 الd", "قنوان صنوان", "Nijedno navedeno"], a: 0 },
+            { q: "IDGAMUN BILA-GUNNEH imamo u sljedećim riječima:", o: ["رحيم رؤف", "دينكم لكم", "ولي من", "Nijedno navedeno"], a: 0 },
+            { q: "Slijevanje dvaju istih glasova (prvi sa sukunom, drugi sa hareketom) je:", o: ["IDGAM MUTEKARIBEJN", "IDGAM MUTEDŽANISEJN", "IDGAM MISLEJN", "Nijedno navedeno"], a: 2 },
+            { q: "Tedžvidsko pravilo u primjerima (ُاََحْطتُ , بََسْطتَُ , فّرْطت) je:", o: ["Kalkali", "Iklabu", "Idgamu Mutedžanisejnu", "Nijednom navedenom"], a: 2 },
+            { q: "Između kojih harfova može doći do slijevanja:", o: ["ت ب ل", "ث ت ن", "م ب", "ز ذ"], a: 2 },
+            { q: "Bliski harfovi (ل ر ,ك ق) asociraju na:", o: ["IDGAMU MISLEJN", "IDGAMU MUTEDŽANISEJN", "IDGAMU MUTEKARIBEJN", "Nijedno navedeno"], a: 2 },
+            { q: "Ovih 15 harfova (ف ط د ت ز ظ ض ك ق ش ج ث ذ ص) su za:", o: ["Izhar", "Ihfa šefevi", "Ihfa", "Izhar šefevi"], a: 2 },
+            { q: "Skrivanje glasa „N“ (Ihfa) imamo u riječima:", o: ["َُفََسي ْنِغض ون", "ُْم ِمْنه", "ُُْقَْبِلكَُُِمن", "ُ َعْنه"], a: 2 },
+            { q: "Znakovi obaveznog stajanja tokom učenja Kur'ana su:", o: ["ال", "ج", "ص", "م قف"], a: 3 },
+            { q: "Tedžvidsko pravilo zajedničko za kratice (الر يسن ص) je:", o: ["Obična dužina", "Meddun muttesil", "Meddun lazim", "Meddun arid"], a: 2 },
+            { q: "Čisto izgovaranje glasa „N“ (IZHAR) imamo u riječima:", o: ["َُاَْنعَْmetَُ َمنُْ khaleq", "َُjunjfiquun", "َُُmin qablik", "ُِْمْنك م"], a: 0 },
+            { q: "Gdje se spojena lična zamjenica (3. l. j. m. r.) izgovara dugo:", o: ["نفقه ما", "ابوه", "ماله", "فيه"], a: 2 },
+            { q: "U kom primjeru dolazi do jačeg praskanja harfa:", o: ["ُيَْقبَل", "م اَْطعََمه", "ُُُْي ولَدَُُْولَم لَمُْ يَِلدُْ", "Nijedno navedeno"], a: 2 }
+        ],
+		"Akaid": [
+            { q: "Definiraj akaid.", o: ["Akaidska nauka nastoji definirati prava i obaveze svakog muslimana.", "Akaidska nauka nastoji definirati i sistematizirati odgovore na sva pitanja islamskog vjerovanja, te da razvije metodologiju odbrane islamskog vjerovanja u odnosu na neispravna mišljenja među muslimanima, kao i na utjecaje sa strane.", "Akaidska nauka se bavi izučavanjem lijepih osobina kod muslimana.", "Akaidska nauka se bavi tumačenjem Kur'ana."], a: 1 },
+            { q: "Misak je:", o: ["Akaidu označava stanje čovjekovog duha, u kojem je on obavezan na vjerovanje i pokoravanje Allahu (dž.š.).", "U akaidu su akaidske škole.", "Označava pravu, Kur’anom objavljenu vjeru, koja je dostavljena i Ibrahimu (a.s.)", "Misak je zavjet koji su Ademovi potomci dali Allahu (dž.š.) u Ezelu (preegzistentnom svijetu)."], a: 3 },
+            { q: "Kufr je:", o: ["U akaidu taj termin označava kršenje Allahovih zapovijedi.", "Osoba koja skriva nevjerovanje, a pokazuje vjerovanje; osoba koja gaji neprijateljstvo, a ispoljava prijateljstvo.", "U akaidu pojam kufr znači pripisivanje Bogu druga", "U akaidu riječ kufr znači nevjerovanje, negiranje jedne od vjerskih istina, kao što su postojanje Boga, meleka, poslanika, kitaba, proživljenja, Dženneta, Džehennema..."], a: 3 },
+            { q: "Munkir i Nekir su meleki :", o: ["Prenosioci Allahovih objava poslanicima,", "Brinu o izdržavanju živih bića,", "Po Allahovoj volji i odredbi u trenutku smrti rastavljaju duše od tijela,", "Su meleki koji će čovjeka u mezaru pitati za njegova djela koja je radio na ovom svijetu."], a: 3 },
+            { q: "Iblis je bio:", o: ["Džinn,", "Melek,", "Čovjek,", "Ništa od toga."], a: 0 },
+            { q: "Koliko je bilo suhufa i kojim poslanicima su objavljeni?", o: ["Suhufa je bilo 100; Adem (a.s.) 50, Šit 30, Idris 10, Ibrahim 10,", "Suhufa je bilo 100; Adem (a.s.) 30, Šit 50, Idris 10, Ibrahim 10,", "Suhufa je bilo 100; Adem (a.s.) 10, Šit 50, Idris 30, Ibrahim 10,", "Suhufa je bilo 100; Adem (a.s.) 30, Šit 10, Idris 10, Ibrahim 50."], a: 0 },
+            { q: "Nabroj četiri velika kitaba i kome su objavljeni:", o: ["Tevrat (Davud, a.s.), Zebur (Musa, a.s.), Indžil (Isa, a.s.) i Kur’an (Muhammed, a.s.)", "Tevrat (Davud, a.s.), Zebur (Isa, a.s.), Indžil (Musa, a.s.) i Kur’an (Muhammed, a.s.)", "Tevrat (Musa, a.s.), Zebur (Davud, a.s.), Indžil (Isa, a.s.) i Kur’an (Muhammed, a.s.)", "Tevrat (Isa, a.s.), Zebur (Musa, a.s.), Indžil (Davud, a.s.) i Kur’an (Muhammed, a.s.)"], a: 2 },
+            { q: "Druga kodifikacija Kur’ana u vrijeme Osmana, r.a., pisari su bili:", o: ["Zejd b. Sabit, Seid b. ‘As, Abdullah b. Zubejr i Abdurrahman b. Haris,", "Zejd b. Sabit, Muavija b. Ebi Sufjan, Allija b. Ebi Talib i Ahmed b. Hanbel,", "Zejd b. Sabit, Halid b. Velid, Ubejj b. Ka’b i Hanzala,", "Zejd b. Sabit, Usama b. Zejd, Zejd b. Haris i Zubejr b. Avvam."], a: 0 },
+            { q: "Pentateuh znači:", o: ["Petoknjižje,", "Pjesme pjevane uz određeni instrument,", "Evanđelje,", "Poslanice"], a: 0 },
+            { q: "Broj vjerovjesnika i poslanika prema hadiskim zbirkama je:", o: ["104 000 vjerovjesnika od čega je 113 poslanika", "114 000 vjerovjesnika od čega je 213 poslanika,", "124 000 vjerovjesnika od čega je 313 poslanika", "134 000 vjerovjesnika od čega je 413 poslanika"], a: 2 },
+            { q: "Razlika između pojmova nebijj i resul:", o: ["Nema razlike, to su sinonimi,", "Resul je slijedio vjerozakon objavljen njemu, nebijj nije imao svoj vjerozakon nego je slijedio vjerozakon poslanika.", "Resul je onaj poslanik čiji narod je bio kažnjen, a nebijj onaj čiji se narod pokajao.", "Nebijj je imao više sljedbenika od resula."], a: 1 },
+            { q: "Duhovno-moralna svojstva Allahovih poslanika su:", o: ["Rizk, šukr, hamd, džemal,", "Keramet, selamet, lutf,", "Sidk, emanet, teblig, ismet, fetanet, adalet,", "Hatabet, kavl, fi’l."], a: 2 },
+            { q: "Vrste mudžiza:", o: ["Hisijje (razumske) i aklijje (osjetilne)", "Hisijje (osjetilne) i aklijje (razumske)", "Hakikijje (imaginarne) i hajalijje (stvarne)", "Hakikijje (stvarne) i hajalije (imaginarne)"], a: 1 },
+            { q: "Veliki predznak Sudnjeg dana je:", o: ["Priželjkivanje smrti zbog grijeha koji se čine,", "Poslanstvo Muhammeda, a.s.,", "Izlazak Sunca sa zapada,", "Mnoštvo žena a manji broj muškaraca."], a: 2 },
+            { q: "Mali predznak Sudnjeg dana je:", o: ["Dolazak Isa, a.s.,", "Pojava Dedžala,", "Dabbetu-l-erdi", "Podizanje znanja."], a: 3 },
+            { q: "Neuobičajena, nadnaravna pojava koja nije rezultat poslanstva niti mu prethodi, a Allah je daje nekome od svojih robova je:", o: ["Kešf,", "Keramet,", "Ilham,", "Mu’džiza."], a: 1 },
+            { q: "Tevekkul je:", o: ["Oslanjanje na Allaha, dž.š. u svim situacijama,", "Bogobojaznost,", "Skromnost,", "Skrušenost."], a: 0 },
+            { q: "Riddet je:", o: ["Odmetništvo od islama,", "Priček za ženu nakon razvoda braka ili smrti muža,", "Pripisivanje Allahu druga,", "Licemjerstvo."], a: 0 },
+            { q: "Drugi otac čovječanstva je:", o: ["Nuh, a.s.", "Hud, a.s.", "Ibrahim, a.s.", "Musa, a.s."], a: 0 },
+            { q: "Kojim imenom je Allah, dž.š., nazvao Ibrahima, a.s., u Kur’anu, a.š.:", o: ["Habibullah,", "Halilullah,", "Kelimullah,", "Nebijjullah?"], a: 1 },
+            { q: "Poslanik poznat po svojoj ljepoti i tumačenju snova:", o: ["Jusuf, a.s.,", "Jakub, a.s.,", "Ishak, a.s.,", "Ibrahim, a.s."], a: 0 },
+            { q: "Definicija ehlul-Kitaba glasi:", o: ["Oni koji su umrli na Allahovom putu,", "Oni koji su izašli iz čiste vjere i njenog šerijata, a bili su sljedbenici nekog od poslanika kojima su objavljene knjige,", "Oni do kojih nije stigla objava,", "Oni postupaju po objavi."], a: 1 },
+            { q: "Ko spada u skupinu ehlu-l-fetre?", o: ["Osobe koje su živjele u periodu između dva poslanika,", "Sljedbenici Knjige,", "Davnašnji narodi,", "Muslimani."], a: 0 },
+            { q: "Ejjub, a.s. bio je poznat po:", o: ["Rječitosti", "Ljepoti,", "Strpljivosti,", "Milozvučnosti glasa."], a: 2 },
+            { q: "Božiji poslanici Arapi su:", o: ["Ismail, Ishak Jusuf i Muhamed, a.s.", "Hud, Salih, Šuajb i Muhamed, a.s.", "Nuh, Idris, Junus i Muhamed, a.s.", "Ibrahim, Davud, Sulejman i Muhamed, a.s."], a: 1 },
+            { q: "Kojom kaznom je uništen narod Junusa a.s.?", o: ["Siloviti vjetar,", "Ognjena kiša,", "Zaglušujući zvuk,", "Pokajali su se i nisu kažnjeni"], a: 3 },
+            { q: "Nabroji mudžize koje je Uzvišeni Allah darivao Davudu, a.s.", o: ["Imao je lijep glas, mogao je rukama oblikovati željezo, pravio je pancire,", "Potčinjeni su mu bili džinni, upravljao je vjetrom, čelik mu je učinjen tečnim,", "Liječio je gubavce, slijepce, oživljavao mrtve..", "Njegova mu’džiza je bila njegova deva."], a: 0 },
+            { q: "Šta je Talmud?", o: ["Naziv za jevrejsku bibliju,", "Specifična objašnjenja o provođenju zakona objavljenog u Tori koja su se prenosila usmeno.", "Tumačenje manje jasnih dijelova Tore,", "Djelo koje govori o kabali?"], a: 1 },
+            { q: "Koji učenjak je u trinaest tačaka izrazio učenje jevrejske teologije?", o: ["Mojzes Mojmonides", "Raši", "Jicak Rabin", "Šimon Peres"], a: 0 },
+            { q: "Praznik koji se slavi kao sjećanje na pobjedonosnu oslobodilačku borbu jevrejskog naroda protiv helenističkih okupatora naziva se:", o: ["Hanuka,", "Pesah,", "Sukot,", "Purim."], a: 0 },
+            { q: "Euharistija :", o: ["Simbolizira posljednju večeru na kojoj je Isus blagoslovio hljeb i vino,", "Bolesničko pomazanje,", "Ispovjed pred svećenikom,", "Krštenje."], a: 0 },
+            { q: "Na Nikejskom koncilu 325. godine donešena je odluka:", o: ["Da je Isus samo bog,", "Da je Sveti duh bog,", "Da Isus ima dvije naravi,", "Da Isus ima dvije volje."], a: 2 },
+            { q: "Najpoznatiji redovi u rimokatoličanstvu su:", o: ["Franjevci, isusovci, dominikanci, trapisti, grkokatolici,", "Adventisti, baptisti, pentekostalci", "Starokatolici, kvekeri, mormoni,", "Amiši, baptisti, milerovci?"], a: 0 },
+            { q: "Arhijerejski sabor je najviši zakonodavni i sudski organ u:", o: ["Rimokatoličanstvu,", "Pravoslavlju,", "Protestanizmu,", "Koptskoj crkvi."], a: 1 },
+            { q: "Najpoznatiji predstavnici protestantizma su:", o: ["Martin Luter, Žan Kalvin, Urlih Zvingli", "Čarls Tejz Rasel, Radenfort Rut, Nejten Nor,", "Vijem Miller, Vilijem Pen, Viljem II,", "Franjo Asiški, Dominik, Hubert."], a: 0 },
+            { q: "Koji teolog je zagovarao načelo vjere sola fides (samo vjera) i sola scripture (samo Biblija)?", o: ["Martin Luther", "Inocentije III", "Ignjacije Lejola", "Nikola Kuzanski"], a: 0 },
+            { q: "Čovjek nema slobodnu volju i čini sve što je predestinirano prema učenju:", o: ["Zejdija", "Džebrija", "Kaderija", "Murdžija"], a: 1 },
+            { q: "Temelji šiijskog vjerovanja su:", o: ["Tevhid, nubuwet, imamet, mead i adl", "Tevhid, adl, risalet, el-va’du vel-veid", "Tevhid, kesb, imamet, adl i el-menziletu bejne-l-menziletejni", "Tevhid, risalet, kesb, adl i imamet"], a: 0 },
+            { q: "Utemeljiteljem mutezilizma se smatra:", o: ["Vasil-ibn Ata", "Ibn Arebi", "Mabed el-Džuheni", "Ibn Sina"], a: 0 },
+            { q: "Šta od navedenog ne spada u principe mutezilijkog učenja:", o: ["Tevhid, el-v’adu vel-veid", "El-menziletu bejne-l-menziletejni, adl", "El-Emru-bil-marufi ven-nehju anil-munkeri", "Kesb i kasd"], a: 3 },
+            { q: "Vanjski faktor koji je doveo do pojave ilmu-l-kelama su:", o: ["Intelektualna radoznalost i priroda Kur’ana", "Različiti stavovi o pojedinim pitanjima", "Susret sa drugim kulturama i civilizacijama", "Politčka misao"], a: 2 },
+            { q: "Koje djelo nije napisao imam Ebu Hanife:", o: ["El-Fikhul-ekber, El-Vasijja", "El-Alimu vel-muetallimu", "El-Munkizu mined-dalal", "El- Ibana"], a: 2 },
+            { q: "Pod sintagmom es-selefu-s-salih se misli na:", o: ["Ashabe, tabine, tabi tabiine, i njihove sljedbenike", "Ashabe", "Ashabe, tabiine", "Muslimanske učenjake u svim periodima."], a: 0 },
+            { q: "Prema Ebu Hanifi iman se sastoji od:", o: ["Spoznaje (ma’rife) uvjerenja (tasdik) i očitovanja (ikrar)", "Uvjerenja (tasdik)", "Očitovanja (ikrar) i djela (amel)", "Očitovanja (ikrar)"], a: 0 },
+            { q: "Koje djelo nije napisao imam Maturidi?", o: ["Kitabu-t-tevhid", "El-Mekalat fi-l-kelam", "Mes’ele fil-iman", "Kitabu-l-džedel"], a: 1 },
+            { q: "Prema čijem akaidu Allah, dž.š., stvara ljudska djela, a čovjek ih samo stiče:", o: ["Imama Eš’arije", "Imama Ebu Hanife", "Imama Tahavije", "Imama Ahmeda Ibn Hanbela"], a: 0 },
+            { q: "Prema učenju imama Maturidije kasd je:", o: ["Važan element slobodne volje koji prethodi činu", "Javlja se u trenutku činjenja djela", "Neposredna je posljedica učinenog djela", "Princip kesba odnosno sticanja"], a: 0 },
+            { q: "Riječ sufizam etimološki vodi porijeko iz riječi:", o: ["Safvan, suf, sofos, sofa", "Zuhd i fakr", "Ilm batin ili llm-i ledunijj", "Vahdet, feba, vahdetu-l- vudžud"], a: 0 },
+            { q: "Tesawuf sunni je tesawuf koji se ne udaljava od sunneta. Njegovi predstavnici su:", o: ["Imam Gazali i imam Rebbani", "Ibn Arebi, Halladž", "Bajazid Bistami", "Ajn Kudat el-Hemedani"], a: 0 },
+            { q: "Nauka koja temeljne vjerske istine dokazuje putem racionalnih argumenata naziva se:", o: ["Ilmu-l-kelam", "Nauka o dijalektici i raspravi", "Nauka o metodu", "Nauka o tumačenju vjere"], a: 0 }
+        ],
+		  "Fikh": [
+            { q: "Šta od navedenog spada u farzove abdesta?", o: ["oprati noge do iza članaka", "isprati nos", "oprati ruke do iza šaka", "potrati vlažnom rukom cijelu glavu"], a: 0 },
+            { q: "Šta od navedenog spada u sunnete abdesta?", o: ["učiti abdestne dove", "okrenuti se prema kibli", "čitav abdest uzeti u jednom mahu, bez prekida", "na kraju abdesta izgovoriti kelimetu-š-šehadet"], a: 3 },
+            { q: "Šta od navedenog spada u farzove gusula?", o: ["svaki dio tijela oprati tri puta", "isprati usta, usrkavajući vode iz desne šake", "otkloniti eventualnu veću nečistoću sa tijela, prije samog čina kupanja", "uzeti abdest prije gusula"], a: 1 },
+            { q: "Šta od navedenog spada u farzove tejemuma?", o: ["potrati desnu pa lijevu ruku do iznad lakta nakon doticanja tla", "nakon doticanja tla, malo ruke potresti, dotičući bočno jednu drugom", "tejemmum uzeti po propisanom redoslijedu", "tejemmum obaviti u jednom mahu bez pauza"], a: 0 },
+            { q: "Koja od navedenih radnji kvari tejemmum?", o: ["ako se u jednom namaskom vremenu klanja više namaza", "sve ono što kvari abdest", "istek namaskog vremena", "dugo trajanje tejemmuma"], a: 1 },
+            { q: "Šta od navedenog spada u uvjete za namaz?", o: ["učiti Kur'an prije namaza", "potruditi se da se namaz obavi u džematu", "klanjati namaz u propisanom vremenu", "u namaz stupati dostojanstveno, bez lijenih pokreta"], a: 2 },
+            { q: "Šta od navedenog spada u namaske farzove?", o: ["učiti Ettehijjatu na prvom sjedenju", "proučiti fatihu na svakom rekatu", "pri spuštanju na sedždu prvo se spustiti koljenima, zatim rukama, a na kraju licem", "pravilno učiti Kur'an u namazu"], a: 1 },
+            { q: "Šta od navedenog spada u namaske vadžibe?", o: ["iza proučene fatihe, proučiti jedno kraće sure", "na posljednem sjedenju kod svih namaza proučiti salavate i dovu", "obaviti posljedne sjedenje", "iza fatihe izgovoriti amin"], a: 0 },
+            { q: "Šta od navedenog spada u propise o sahibi uzuru?", o: ["nije dužna klanjati", "naklanjat će propuštene namaze", "ne može predvoditi džemat onima koji su sahibi uzur", "za svako novo namasko vrijeme uzet će abdest"], a: 3 },
+            { q: "Koja radnja, od navedenih, kvari namaz?", o: ["gutanje hrane", "klanjati na tuđem posjedu bez njegove dozvole", "klanjati pod pritiskom male ili velike nužde", "prihvatiti selam, išaretom, nekom ko dolazi sa strane"], a: 0 },
+            { q: "Kako će osoba naklanjati podnu i ikindiju?", o: ["klanjat će prvo ikindiju pa podnu", "klanjat će prvo akšam, pa onda podnu i ikindiju", "ako je vrijeme akšama na izmaku, klanjat će prvo akšam pa zatim podne i ikindiju", "klanjat će ono što joj je lakše, jer je propustila više od dva namaza"], a: 2 },
+            { q: "Kako će osoba pristupiti džematu ako je imam na sjedenju sabahskog farza?", o: ["klanjat će sunnete, bez obzira stigao na farz ili ne", "sjest će na sjedenje, sačekat imama da završi pa naklanjati 2 rekata", "klanjat će sam jer je zakasnio na makar jedno stajanje u namazu", "poslije klanjanja dva rekata farza, klanjat će i dva rekata sunneta"], a: 1 },
+            { q: "Sehvi sedžda se čini u sljedećim situacijama:", o: ["ako se propusti jedan od sunneta namaza", "ako se nenamjerno propusti namaski vadžib", "ako se propusti farz namaza", "ako musallija ne kaže amin nakon Fatihe"], a: 1 },
+            { q: "Osobe koje nisu dužne obavljati džuma-namaz?", o: ["bolesnik", "zdrava osoba", "punoljetna osoba", "muškarac"], a: 0 },
+            { q: "Šta od navedenog spada u propise o dženaza-namazu?", o: ["dženaza- namaz je farz ajn", "dženaza- namaz će se klanjati i djetetu koje je mrtvo rođeno", "dženaza- namaz klanjaju samo muškarci", "dženaza- namaz se ne klanja samoubici"], a: 1 },
+            { q: "U koje vrijeme se klanja duha namaz?", o: ["odmah nakon sabah namaza", "između jacije i zore", "do 10 h ujutru", "nakon što Sunce odskoči od istočnog horizonta pa sve dok se ne digne visoko u nebo"], a: 3 },
+            { q: "Šta od navedenog spada u obavezni post?", o: ["na dan Arefata", "na dan jevmi ašure", "zavjetni post", "post svih keffareta"], a: 2 },
+            { q: "Šta od navedenog spada u radnje koje kvare post, a ne zahtijevaju kefaret?", o: ["namjerno povraćanje", "ispuštanje krvi iz tijela, u manjoj količini, bez potrebe", "namjerno pokvaren post unosom hrane", "spolni odnos"], a: 0 },
+            { q: "Šta od navedenog spada u post koji je vadžib?", o: ["nadoknada svakog pokvarenog nafila posta", "svaki post koji je Poslanik, a.s., praktikovao", "ramazanski post", "šest dana mjeseca ševvala"], a: 0 },
+            { q: "Ko od navedenih može dati fidju?", o: ["putnik", "iznemogli starac i starica", "trudnica", "bolesnik koji se nada ozdravljenju"], a: 1 },
+            { q: "Šta od navedenog spada u imovinu na koju se daje zekat?", o: ["automobil", "srebro", "konji", "biser"], a: 1 },
+            { q: "Koliko iznosi nisab zlata?", o: ["91,3 grama", "91,6 grama", "87,2 grama", "91,5 grama"], a: 2 },
+            { q: "Koliko iznosi nisab srebra?", o: ["641 gram", "641,5 grama", "651,4 grama", "641,3 grama"], a: 3 },
+            { q: "Kome od navedenih se ne može dati zekat?", o: ["beskućnicima", "siromasima", "bračnom drugu", "onima koji skupljaju zekat"], a: 2 },
+            { q: "Vrijeme davanja sadekatul-fitra je:", o: ["između dva Bajrama", "poslije Ramazanskog bajram-namaza", "sve do klanjanja Ramazanskog bajram-namaza", "bilo koje doba godine, ukoliko poznajemo nekog siromašnog"], a: 2 },
+            { q: "Šta je temmetu?", o: ["vrsta posta", "kategorija kojoj se može dati zekat", "nafila", "vrsta hadždža"], a: 3 },
+            { q: "Šta od navedenog spada u farzove hadždža?", o: ["tavafus-sadr", "sa'j između Safe i Merve", "klanje kurbana na Minni", "tavafuz-zijare"], a: 3 },
+            { q: "Šta od navedenog spada u propise tavafus-sadra?", o: ["žena je oslobođena obavljanja ovog tavafa", "obavlja se prilikom dolaska u Mekku", "ovaj tavaf je sunnet", "ovaj tavaf je vadžib"], a: 3 },
+            { q: "Šta od navedenog predstavlja mehr muedždžel?", o: ["mehr koji podrazumijeva zaruku", "mehr koji se daje prije sklapanja braka", "jedan je od uvjeta pri samom sklapanju braka", "naknadni mehr"], a: 3 },
+            { q: "Koliko traje iddet udovice?", o: ["traje 3 mjeseca i 10 dana", "traje 4 mjeseca", "traje 4 mjeseca i 10 dana", "traje 4 mjeseca i 12 dana"], a: 2 }
+        ],
+		 "Ahlak": [
+            { q: "Koje je značenje pojma ahlak?", o: ["Ponašanje u skladu sa kulturom jednog naroda", "Kultura u komunikaciji", "Strpljenje u nevoljama", "Ćud, narav, način ophođenja sa svijetom, množina od riječi huluk"], a: 3 },
+            { q: "Šta je Ilmu-l-ahlak?", o: ["Nauka o moralu i moralnim vrijednostima", "Šeriatska nauka koja se bavi odgojem i liječenjem od loših svojstava", "Društvena nauka o uređenju ljudske zajednice", "Nauka o porocima"], a: 1 },
+            { q: "Koji su izvori islamske etike?", o: ["Kur'an, sunnet i selefu-s-salih", "Um, srce i islamski odgoj", "Sunnet Allahova poslanika, s.a.v.s.", "Kur'anski ajeti o dobru"], a: 0 },
+            { q: "Sa kojom naukom je Ahlak najuže povezan?", o: ["Sociologija", "Pedagogija", "Tefsir", "Fikh"], a: 3 },
+            { q: "Koje su najbolje generacije muslimana?", o: ["Prva generacija muslimana", "Posljednji muslimani", "Braća koju je Poslanik poželio", "Ashabi, tabiini i teb'i tabiini"], a: 3 },
+            { q: "Temeljne vrijednosti u islamskoj etici su:", o: ["Moral, bogobojaznost, sabur i pravda", "Iskrenost i čist nijjet", "Život, tevhid, znanje, moć, ljepota, ljubav, milost, pravda i iskrenost", "Sklad između riječi i djela"], a: 2 },
+            { q: "Jedan život vrijedi kao život cijeloga čovječanstva, na osnovu kojeg ajeta?", o: ["En-Nahl, 126", "El-En'am, 162", "El-Maide, 32 (Ako neko ubije nekoga...)", "Er-Rum, 19"], a: 2 },
+            { q: "Šta znači sunnetullah?", o: ["Allahov zakon u kosmosu", "Sunnet Allahova poslanika, a.s.", "Islamska tradicija", "Allahova pravda"], a: 0 },
+            { q: "Šta se povećava kod mu'mina sa povećavanjem njegove moći?", o: ["Imetak", "Odgovornost", "Vlast", "Oholost"], a: 1 },
+            { q: "Da li je prema Kur'anu ispravnija pravednost ili praštanje?", o: ["Pravednost je iznad praštanja", "Praštanje je iznad pravednosti", "Pravednost je jednaka praštanju", "Odmazda je iznad pravednosti"], a: 1 },
+            { q: "„Mi čovjeka u najljepšem skladu stvaramo“ (Et-Tin, 4) izražava:", o: ["Fizičku ljepotu", "Moralne vrijednosti", "Umne sposobnosti", "Sklad umnih, duševnih i fizičkih kvaliteta"], a: 3 },
+            { q: "O kojem se Allahovom svojstvu najviše govori u Kur'anu?", o: ["Pravednost", "Mudrost", "Milost", "Ljepota"], a: 2 },
+            { q: "Koji je najuzvišeniji oblik ljubavi na ovom svijetu?", o: ["Ljubav majke prema djetetu", "Ljubav prema Allahu i Njegovom poslaniku, s.a.v.s.", "Ljubav među bračnim drugovima", "Ljubav dvojice prijatelja u ime Allaha"], a: 1 },
+            { q: "U čemu se ogleda bogobojaznost (et-takva) jednog mu'mina?", o: ["U izvršavanju svih propisa", "U klanjanju noćnog namaza", "U skladu između riječi i djela", "U predostrožnosti da se ne učini ni jedna greška"], a: 2 },
+            { q: "Koji su uvjeti za primanje tevbe (pokajanja)?", o: ["Prestanak sa griješenjem, iskreno kajanje i odluka da se ne vrati grijehu", "Klanje kurbana", "Javno kajanje pred džematom", "Dijeljenje sadake"], a: 0 },
+            { q: "U čemu se sastoji iskrenost?", o: ["Iskrenost je odnos prema Allahu", "Otvorenost i jasnoća u govoru", "Sklad između misli, riječi i djela u odnosu prema Bogu, sebi i ljudima", "Blago odnošenje prema živim bićima"], a: 2 },
+            { q: "Koja osobina je ćud i kultura islamske vjere?", o: ["Urednost", "Stid", "Skromnost", "Emanet"], a: 1 },
+            { q: "Zašto je važna pažljivost u biranju prijatelja?", o: ["Dijelimo dobro i zlo", "Prijateljstvo je uvjet društva", "Čovjek je na vjeri svoga prijatelja", "Vjernici su prijatelji jedni drugima"], a: 2 },
+            { q: "Koja poslušnost je dio pokornosti Allahu, dž.š.?", o: ["Pretpostavljenima", "Roditeljima", "Uzorima", "Onima od kojih ovisimo"], a: 1 },
+            { q: "Koja osobina ne može biti u srcu zajedno sa imanom?", o: ["Zavist", "Škrtost", "Kukavičluk", "Oholost"], a: 3 },
+            { q: "Koje je boravište licemjera na ahiretu?", o: ["Džehennem", "Dno džehennema (derku-l-esferi)", "Sekar", "Veliki azab"], a: 1 },
+            { q: "Koja se loša osobina izražava pogledom?", o: ["Licemjerstvo", "Škrtost", "Pohlepa", "Zavist"], a: 3 },
+            { q: "Kradljivcu se izriče vrlo teška kazna na ovom svijetu:", o: ["Bacanje sa stijene", "Kamenovanje", "Unakrsno odsijecanje udova", "Odsijecanje ruke"], a: 3 },
+            { q: "Koja je temeljna poruka Kur'ana?", o: ["Slijeđenje sunneta", "Iskreno vjerovanje", "Moralan život", "Vjerovati i činiti dobro"], a: 3 },
+            { q: "Kako se djela vrednuju u moralnom smislu?", o: ["Prema posljedicama", "Prema iskrenom govoru", "Prema uvjerenju", "Prema namjerama"], a: 3 },
+            { q: "Koji je uvjet za moralno vrednovanje postupaka?", o: ["Znanje", "Pokornost", "Sloboda", "Edeb"], a: 2 },
+            { q: "Šta je dužnost sa moralnog aspekta?", o: ["Šeriatom reguliran propis", "U savjesti doživljeni osjećaj kategoričke pozvanosti", "Moralna norma ponašanja", "Građanska obaveza"], a: 1 },
+            { q: "Ko je izvor moralnih normi u islamu?", o: ["Pravo muslimanske države", "Moralni zakon s kojim se rađamo", "Bog, koji svoju volju izražava u Šeriatu", "Sunnet Allahova poslanika"], a: 2 },
+            { q: "Značenje pojma haram?", o: ["Ono što je zabranjeno, sveto i nedodirivo", "Činjenje velikih grijeha", "Kršenje moralnih normi", "Bolest duše"], a: 0 },
+            { q: "Koja moralna vrijednost je bila očuvana kod predislamskih Arapa?", o: ["Odnos prema potčinjenima", "Prava žena", "Nepoznavanje krvne osvete", "Gostoprimstvo i junaštvo"], a: 3 },
+            { q: "Koje godine halifa El-Me' mun osniva Bejtu-l-hikmeh?", o: ["148./765.", "217./832.", "215./830.", "243./857."], a: 2 },
+            { q: "Koji mislioci su predstavnici tradicionalističke etike?", o: ["Ebu Musa el-Eš'ari", "Nasiruddin Tusi", "Ibn Kajjim el-Dževzi i Ahmed ibn Hanbel", "Vasil ibn Ata"], a: 2 },
+            { q: "Koji predstavnik sufijske etike je jedan od najoriginalnijih u povijesti?", o: ["Dželaluddin Rumi", "Muhammed ibn Abdu-l-vehhab", "Šihabuddin Suhraverdi", "Ebu Hamid el-Gazali"], a: 3 },
+            { q: "Da li je dopušteno ubistvo iz samilosti (Mercy killing)?", o: ["Dopušteno kod teških bolova", "Dopušteno kad nema nade", "Dopušteno uz saglasnost porodice", "Nije dopušteno i predstavlja ubistvo ili samoubistvo"], a: 3 }
+        ],
+		"Tefsir": [
+            { q: "El ilhamu el fitrijju lil insan je:", o: ["Objava nebesima i Zemlji", "Objava poslanicima i vjerovjesnicima", "Nadahnuće dobrim ljudima", "Objava melekima"], a: 2 },
+            { q: "Kur'an je jedina knjiga koju je ibadet učiti:", o: ["El mute'abedu bi tilavetihi", "Elmektubu bejne duffeteji-l-mushafi", "El menkulu ilejna tevaturen", "Li-l-i'džazi bisuretin minhu"], a: 0 },
+            { q: "Levhi mahfuz je:", o: ["Ploča neuništive memorije", "Matična knjiga", "Skrivena knjiga", "Kamena ploča"], a: 0 },
+            { q: "Posljednji objavljeni ajet je:", o: ["Eljevme ekmeltu lekum dinekum (El-Maide, 3.)", "Ve ttekuu jevme turdžeune fihi... (El-Bekare, 281.)", "Ja ejjuhellezine amenu vezeruu... (El-Bekare, 278.)", "Ve men ahsenu kavlen (Fussilet, 33.)"], a: 1 },
+            { q: "Zaokruži povod postepenog objavljivanja Kur'ana:", o: ["Da se učvrsti srce Poslanika, a.s., i poslanička misija", "Mala vremenska razlika između smrti Poslanika i zadnjeg ajeta", "Da se nastavi praksa prethodnih Objava", "Radi lakšeg zapisivanja"], a: 0 },
+            { q: "Djelo Dželaluddina Sujutija je:", o: ["Kitabu esbabi nuzul", "Lubabu nukul fi esbabi nuzul", "El ibretu bi umumi lafzi", "El-džami'u fi ahkami Kur'an"], a: 1 },
+            { q: "Riječ mu'džiza je nastala od izraza:", o: ["Ajet", "Burhan", "Ea'džeze", "Bejjine"], a: 2 },
+            { q: "Zaokruži ko bio pisar Objave u vrijeme Poslanika, a.s.:", o: ["S'ad ibn ebi Vekas", "Abdullah ibn Mes'ud", "Muaz ibn Džebel", "Ukbe bin Naf'i"], a: 1 },
+            { q: "Razlog prve kodofikacije Kur'ana je:", o: ["Bitka na Siffinu", "Bitka na Jemami", "Bitka na Uhudu", "Bitka na Hendeku"], a: 1 },
+            { q: "Uz svaki prijepis Kur'ana Osman, r.a., poslao je učača. Ko je otišao u Kufu?", o: ["Ebu Abdurahman es-Sulemi", "El-Mugire bin Šihab", "Abdullah bin Es-Saib", "Amr ibn el-As"], a: 0 },
+            { q: "Prema hadisu Kur'an je objavljen na 7 harfova. Najispravnije tumačenje je:", o: ["Da se misli na 7 kiraeta", "Da se misli na 7 narječja arapskih plemena", "Da se misli na 7 različitih tipova promjena u Kur'anu", "Da broj sedam predstavlja nešto neodređeno"], a: 2 },
+            { q: "Mešhur kiraet je:", o: ["Kiraet ispravnog seneda, ne podliježe pravilima pisma, odgovara pravilima jezika", "Kiraet kod kojeg nije ispravan sened", "Kiraet neispravnog seneda, prati pravila pisma", "Kiraet ispravnog seneda, prati pravila pisma i jezika"], a: 0 },
+            { q: "Naš imama u kiraetu je:", o: ["Abdullah ibn Kesir", "Asim ibn Ebi en-Nedžud", "Ebu Amr bin el-Eala", "Kemal ibn Fadil"], a: 1 },
+            { q: "Nezir je atribut Kur'ana i znači:", o: ["Knjiga radosnih vijesti", "Knjiga opomene", "Moćna knjiga", "Knjiga upute"], a: 1 },
+            { q: "Najduži ajet u Kur'anu je:", o: ["Ajetu-l-kursijj", "Ajet o raspodjeli imetka", "Ajetu dejn", "Ajet muhkem/mutešabih (Ali Imran, 7.)"], a: 2 },
+            { q: "Zaokruži suru koja počinje kletvom:", o: ["Ve-l-fedžr", "Hel etake hadisu-l-gašijeh", "Vejlun lil mutaffifin", "Li iilafi Kurejš"], a: 2 },
+            { q: "Najispravnija terminološka odredba u podjeli na mekkansko-medinsko je:", o: ["Po načinu obračanja", "Po vremenu", "Po mjestu", "Po dužini ajeta"], a: 1 },
+            { q: "U nauci postoje znakovi za prepoznavanje medinskih sura. Zaokruži!", o: ["Sure koje imaju izraz Kella", "Sure koje imaju kraće ajete", "Sure u kojima je sedžda", "Sure koje govore o propisu džihada"], a: 3 },
+            { q: "Et-tival sure su:", o: ["Sure koje imaju oko stotinu ajeta", "Najkraće sure u Kur'anu", "Ponavljajuće sure", "Sedam najdužih sura"], a: 3 },
+            { q: "Muhkem ajeti su:", o: ["Ajeti koji nisu jasni", "Ajeti koji su djelimično jasni", "Ajeti koji su jasni i nedvosmisleni", "Ajeti koje treba dodatno prote'viliti"], a: 2 },
+            { q: "Derogacija je:", o: ["Dokidanje šerijatske odredbe šerijatskim argumentom", "Dokidanje šerijatskog argumenta šerijatskom odredbom", "Djelimično dokidanje nekog propisa", "Potvrđivanje prethodnog propisa"], a: 0 },
+            { q: "Zaokruži ajet u kojem ljudi iznose svoje poređenje:", o: ["Meselu-l- ferikajni ke-l-e'ama ve-l-essami", "Kulu vešrebu ve la tusrifuu", "Ve darebe lena meselen ve nesije halkah", "Tebbet jedaa Ebi Lehebin"], a: 2 },
+            { q: "Jezičko značenje termina kasas je:", o: ["Kazivanja o prošlim vremenima", "Slijeđenje, praćenje traga, stopu po stopu", "Kur'anske pripovijetke", "Kur'anske rasprave"], a: 1 },
+            { q: "Džedel je:", o: ["Zaklinjanje u Kur'anu", "Vođenje rasprave u Kur'anu", "Navođenje kur'anskih primjera", "Postepeno objavljivanje Kur'ana"], a: 1 },
+            { q: "Zaokruži ajet o zaklinjanju:", o: ["Ve aksemu billahi džehde ejmanihim", "Efela jetedebberune-l-Kur'ane", "Ve evhajna ila ummi Musa", "Ma nensah min ajetin"], a: 0 },
+            { q: "Tefsir Tenviru-l-mikbas min tefsir Ibn 'Abbas je sabrao:", o: ["Ibn 'Abbas", "Nabulsi", "Fejruzabadi", "Er-Razi"], a: 2 },
+            { q: "El-Keššaf je skraćeni naziv za tefsir:", o: ["Ibn Kesira", "Zemahšerija", "Kurtubija", "Es-Sujutija"], a: 1 },
+            { q: "Ibn Kesirov tefsir pripada kategoriji tefsira:", o: ["Moderni", "Racionalni", "Tradicionalni", "Jezički"], a: 2 },
+            { q: "Drugi naziv za Razijev tefsir Mefatihu-l-gajb je:", o: ["Et-Tefsir el-kebir", "Tefsiru-l-Kur'ani-l-'azim", "Tefsiru-l-dželalejn", "El-džami'u fi ahkami Kur'an"], a: 0 },
+            { q: "Osnova za Korkutov prijevod Kur'ana je tefsir:", o: ["Kurtubija", "Zemahšerija", "Taberija", "Eš-Ša'ravija"], a: 0 }
+        ],
+        "Hadis": [
+            { q: "Definicija hadisa:", o: ["Sve ono što je Allahov poslanik rekao ili šutnjom odobrio", "Sve što se prenosi od riječi i dijela", "Sve što je Poslanik rekao, uradio, odobrio, opis osobina i životopis", "Sve što se prenosi od riječi, dijela i onoga što je šutnjom odobrio"], a: 2 },
+            { q: "Značenje ravije, seneda, metna:", o: ["Ravija – tekst, sened – lanac, metn - prenosilac", "Ravija – prenosilac, sened – lanac, metn - tekst", "Ravija – tekst, sened – prenosilac, metn - lanac", "Ravija – lanac, sened – tekst, metn – prenosilac"], a: 1 },
+            { q: "Navesti hadis koji ukazuje da je Hadis šerijatsko-pravni izvor:", o: ["Sjećao se Allaha u svim situacijama", "Bio je najljepšeg izgleda i morala", "Ostavljam vam dvije stvari: Allahovu knjigu i moj sunnet", "Dat mi je Kur’an i nešto slično njemu"], a: 2 },
+            { q: "Navesti hadis koji ukazuje da je Hadis objava:", o: ["Sjećao se Allaha u svim situacijama", "Bio je najljepšeg izgleda i morala", "Ostavljam vam dvije stvari: Allahovu knjigu i moj sunnet", "Dat mi je Kur’an i nešto slično njemu"], a: 3 },
+            { q: "Primjer kada Hadis objašnjava općenite riječi iz Kur'ana:", o: ["Propis o kradljivcu", "Detaljno uputstvo za obavljanje namaza", "Pojasnjenje o trojici izostalih", "Riječ kevser"], a: 1 },
+            { q: "Definicija Ashaba:", o: ["Muškarci koji su sreli Poslanika i vjerovali", "Muškarci i žene koji su sreli Poslanika, vjerovali i umrli kao muslimani", "Osobe koje su vidjele Poslanika", "Žene koje su srele Poslanika i vjerovale"], a: 1 },
+            { q: "Koji ashab prenosi najviše hadisa i koliko:", o: ["Ebu Hurejre 5374", "Abdullah ibn Mes'ud 5375", "Abdullah ibn Amr 5373", "Abdullah ibni Omer 3576"], a: 0 },
+            { q: "Koja žena prenosi najviše hadisa:", o: ["Hazreti Hatidža r.a.", "Hazreti Aiša r.a.", "Hazreti Fatima r.a.", "Hazreti Zejneb r.a."], a: 1 },
+            { q: "Zbog čega hadis nije pisan na početku islama:", o: ["Niko nije znao pisati", "Mrsko im bilo pisati", "Bojazan da se ne pomiješa sa Kur'anom", "Nisu imali čime pisati"], a: 2 },
+            { q: "Među prvim zbirkama napisana u vrijeme Allahovog poslanika je:", o: ["Malikov Muvetta", "Ahmedov Musned", "Buharijin sahih", "Sahifetu Sadika od Abdullaha ibn Amra"], a: 3 },
+            { q: "Koji halifa je zatražio pisanje hadisa:", o: ["Omer ibn Hattab", "Alija ibn Ebi Talib", "Ebu Bekr Es-Siddik", "Omer ibn Abdulaziz"], a: 3 },
+            { q: "Šta je Sahih vrsta zbirke?", o: ["Zbirka hadisa i mišljenja ashaba", "Zbirka isključivo vjerodostojnih hadisa", "Zbirka prema imenima ashaba", "Zbirka iz oblasti fikha"], a: 1 },
+            { q: "Sunen je vrsta zbirke:", o: ["Zbirka hadisa i mišljenja ashaba", "Zbirka isključivo vjerodostojnih hadisa", "Zbirka prema imenima ashaba", "Hadiska zbirka po temama iz oblasti fikha"], a: 3 },
+            { q: "Musned je vrsta zbirke:", o: ["Zbirka hadisa i mišljenja ashaba", "Zbirka isključivo vjerodostojnih hadisa", "Zbirka napisana prema imenima ashaba", "Zbirka po temama iz fikha"], a: 2 },
+            { q: "Koje zbirke spadaju u kutubu sitte?", o: ["Buharijin, Muslimov, Ibni Hibanov, Tirmizijin, Malikov, Ibni Madžin", "Buharijin, Muslimov, Ebu Davudov, Tirmizijin, Malikov, Ibni Madžin", "Buharijin, Muslimov, Ebu Davudov, Tirmizijin, Nesaijin, Ibni Madžin", "Buharijin, Muslimov, Darimijin, Tirmizijin, Malikov, Ibni Madžin"], a: 2 },
+            { q: "Najvjerodostojnija zbirka poslije Kur'ana:", o: ["Buharijin Sahih", "Muslimov Sahih", "Ibni Hibanov Sahih", "Malikov Muvetta"], a: 0 },
+            { q: "Najpoznatije djelo Malika ibn Enesa je:", o: ["Musned", "Muvetta", "Sahih", "Sunen"], a: 1 },
+            { q: "Koji su uvjeti za prenosioca hadisa:", o: ["Temjiz, Bulug, Adalet, Dabt", "Islam, Bulug ve Akl, Adalet, Dabt", "Samo Bulug ve Akl", "Temjiz", "Islam i Temjiz"], a: 1 },
+            { q: "Šta je to Ilmul džerhi ve ta'dili:", o: ["Disciplina o primanju hadisa", "Disciplina koja se bavi ocjenom ravija", "Proučavanje nedostataka", "Derogacija u hadisu"], a: 1 },
+            { q: "Definicija HADIS KUDSIJJA:", o: ["Hadis spojenog seneda", "Hadis kojeg prenosi veliki broj ljudi", "Hadis koji se pripisuje Poslaniku", "Vijesti koje se pripisuju Allahu, a Poslanik je samo prenosilac"], a: 3 },
+            { q: "Definicija MERFUA hadisa:", o: ["Potpuno spojen sened", "Hadis koji se pripisuje Poslaniku (vjerodostojan ili ne)", "Vijesti koje se pripisuju Allahu", "Hadis kojeg tabi'in prenosi od Poslanika"], a: 1 },
+            { q: "Definicija MUTTESIL hadisa:", o: ["Hadis čiji je sened potpuno spojen", "Hadis koji se pripisuje Poslaniku", "Hadis koji se pripisuje Allahu", "Hadis kojeg tabi'in prenosi"], a: 0 },
+            { q: "Definicija MUTEVATIR hadisa:", o: ["Hadis čiji je sened potpuno spojen", "Hadis kojeg u svakoj generaciji prenosi veliki broj ljudi (nemogućnost laži)", "Hadis koji se pripisuje Poslaniku", "Hadis kojeg prenosi tabi'in"], a: 1 },
+            { q: "Definicija MURSEL hadisa:", o: ["Hadis spojenog seneda", "Mutevatir hadis", "Hadis Allahovog govora", "Hadis kojeg tabi‘in prenosi od Poslanika"], a: 3 },
+            { q: "Definicija SAHIH hadisa:", o: ["Hadis spojenog seneda", "Hadis pripisan Poslaniku", "Vlastite riječi Allaha", "Hadis spojenog seneda, pouzdani prenosioci, bez skrivenih propusta"], a: 3 },
+            { q: "Definicija DAIF hadisa:", o: ["Manje siguran sahih", "Spojen sened bez propusta", "Hadis koji ne ispunjava jedan ili više uslova sahih hadisa", "Tabi'in hadis"], a: 2 },
+            { q: "Ko je prvi počeo da izmišlja hadise:", o: ["Ashabi", "Emevije", "Šije nakon sukoba Alije i Muavije", "Haridžije"], a: 2 },
+            { q: "Od koliko ashaba šije uzimaju hadise i jesu li Ebu Bekr i Omer među njima?", o: ["15 ashaba, uključujući Omera i Ebu Bekra", "13 ashaba, uključujući Omera", "13 ashaba, uključujući Ebu Bekra", "15 ashaba, među kojima nisu Omer i Ebu Bekr"], a: 3 },
+            { q: "Hadis učenjak iz BiH nakon odlaska Osmanlija:", o: ["Hasan Kafi Prušćak", "Alidede Mostarac", "Mustafa Pruščak", "Mehmed ef. Handžić"], a: 3 },
+            { q: "3 učenjaka koji su dali doprinos hadisu u 21. vijeku:", o: ["Fuad Sedić, Šefik Kurdić, Mahmur Karalić", "Enes Ljevaković, Šefik Kurdić, Mahmur Karalić", "Fuad Sedić, Enes Ljevaković, Asmir Imamović", "Sedić, Hodžić, Imamović"], a: 0 }
+        ],
+		"Povijest Islama": [
+            { q: "Koje godine je rođen Muhammed, a.s.?", o: ["622.", "570.", "610.", "632."], a: 1 },
+            { q: "Nakon smrti majke Amine Poslanik, s.a.v.s., boravio je kod:", o: ["Amidže Ebu Taliba", "Amidže Ebu Leheba", "Djeda Abdu-l-Mutaliba", "Dojilje Halime"], a: 2 },
+            { q: "Koje godine je Muhammedu, a.s., obznanjeno poslanstvo?", o: ["610.", "570.", "622.", "615."], a: 0 },
+            { q: "Kada je Poslanik, s.a.v.s., počeo sa javnim pozivanjem u islam?", o: ["Nakon 5 godina poslanstva", "Nakon 8 godina poslanstva", "Nakon 15 godina poslanstva", "Nakon 3 godine poslanstva"], a: 3 },
+            { q: "620. godina poznata je kao Godina tuge zbog smrti:", o: ["Amidže Ebu Taliba i djeda Abdu-l-Mutaliba", "Djeda Abdu-l-Mutaliba i majke Amine", "Amidže Hamze, r.a.", "Supruge Hatidže i amidže Ebu Taliba"], a: 3 },
+            { q: "Hidžra je:", o: ["Bježanje pred neprijatelem", "Migracija", "Preseljenje iz jednog mjesta u drugo u ime Gospodara", "Potraga za lagodnijim životom"], a: 2 },
+            { q: "Šta je osnovni povod bici na Bedru?", o: ["Želja muslimana za osvetom", "Strah Ebu Sufjana od napada muslimana na karavanu", "Ispunjenje odredbi sporazuma sa Hudejbije", "Priprema za konačno oslobođenje Mekke"], a: 1 },
+            { q: "Kada je Poslanik, s.a.v.s., sa ashabima uspio osloboditi rodnu Mekku od mušrika?", o: ["610.", "632.", "630.", "622."], a: 2 },
+            { q: "Sa kim su se muslimani trebali sukobiti na Tebuku?", o: ["Sa perzijskom vojskom", "Sa habešijskom vojskom", "Sa mušricima", "Sa bizantijskom vojskom"], a: 3 },
+            { q: "Muhammed, a.s., preselio je na bolji svijet:", o: ["630. godine", "632. godine", "628. godine", "570. godine"], a: 1 },
+            { q: "Prva kodifikacija Kur'ana izvršena je tokom vladavine halife:", o: ["h. Ebu Bekra, r.a.", "h. Omera, r.a.", "h. Osmana, r.a.", "h. Alije, r.a."], a: 0 },
+            { q: "Tokom čije vladavine je Jerusalem postao sastavni dio islamske države?", o: ["h. Ebu Bekra, r.a.", "h. Omera, r.a.", "h. Osmana, r.a.", "Muavije bin Ebi Sufjana"], a: 1 },
+            { q: "U kojem vremenskom periodu je h. Osman, r.a., upravljao islamskom državom?", o: ["632.-634.", "634.-644.", "656.-661.", "644.-656."], a: 3 },
+            { q: "Šta je podrazumjevala druga kodifikacija Kur'ana?", o: ["Sakupljanje u jednu zbirku", "Vokalizaciju radi lakšeg čitanja", "Umnožavanje i slanje u velike islamske centre", "Podjelu na džuz'ove"], a: 2 },
+            { q: "Ko je izvršio atentat na h. Aliju, r.a.?", o: ["Firus ebu Lu'lu'", "Grupa pobunjenika", "Abdur-Rahman ibn Muldžem", "Ebu Muslim el-Horosani"], a: 2 },
+            { q: "Osnivačem Benu Umejje dinastije smatra se:", o: ["Abdu-l-Melik ibn Mervan", "Jezid I", "Muavija I ibn Ebi Sufjan", "Omer ibn Abdu-l-aziz"], a: 2 },
+            { q: "Period vladavine Abdul-Melik ibn Mervana?", o: ["685.-705.", "656.-661.", "705.-715.", "715.-717."], a: 0 },
+            { q: "Ko se smatra petim hulefa-i-rašidinom?", o: ["Abdul-Melik ibn Mervan", "Velid ibn Abdul-Melik", "Sulejman ibn Abdul-Melik", "Omer ibn Abdu-l-aziz"], a: 3 },
+            { q: "Po kome je druga dinastija u povijesti islama dobila ime?", o: ["Ebu Abbasu es-Sefahu", "Abbasu ibn Abdu-l-Mutalibu", "Ebu Muslimu el-Horosaniju", "Harunu er-Rešidu"], a: 1 },
+            { q: "Tokom vladavine kojeg abbasijskog halife je započeta gradnja Bagdada?", o: ["Ebu Abbasa es-Sefaha", "Muhameda el-Mehdija", "Ebu Dža'fera el-Mensura", "Abdullah el-Me'muna"], a: 2 },
+            { q: "Šta je Medžlisu li reddimezalim?", o: ["Vijeće za suzbijanje nepravde", "Kuća mudrosti", "Mjesto okupljanja onih koji su činili zulum", "Mjesto hodočašća"], a: 0 },
+            { q: "Koje godine je došlo do posljednjeg arapskog pokušaja osvajanja Konstantinopolisa?", o: ["754.", "782.", "1187.", "1453."], a: 1 },
+            { q: "Tokom vladavine Abdullaha el-Me'muna osnovana je bitna institucija u Bagdadu:", o: ["Medžlisu li reddimezalim", "Daru-l-kutub", "Daru-š-šedžere", "Bejtu-l-hikme"], a: 3 },
+            { q: "Posljednji, šesti period vlasti, abbasijske halife su provele u prijestolnici:", o: ["Enbara", "Bagdad", "Samara", "Kairo"], a: 3 },
+            { q: "Fatimijska država je osnovana na području koje moderne afričke zemlje?", o: ["Maroka", "Egipta", "Tunisa", "Libije"], a: 2 },
+            { q: "Ko je najzaslužniji za osnivanje Kaira i Džamiatu-l-ezhera?", o: ["Salahudin Ejjubi", "Dževher es-Saklebi", "Amr ibn el-As", "Ismail ibn Kasim"], a: 1 },
+            { q: "Križari su kao osnovni povod svojih pohoda navodili:", o: ["Borbu protiv nevjernika", "Materijalnu korist", "Ponovno ujedinjenje Crkve", "Spriječenost hodočašća Jerusalema"], a: 3 },
+            { q: "Koji muslimanski vojskovođa je zaslužan za vraćanje Jerusalema od Križara?", o: ["h. Omer, r.a.", "Omer ibn Abdu-l-Aziz", "Dževher es-Saklebi", "Salahudin Ejjubi"], a: 3 },
+            { q: "Period vladavine Abdurahmana III u Andaluziji?", o: ["756.-788.", "788.-796.", "912.-961.", "961.-976."], a: 2 },
+            { q: "Posljednje utočište muslimana u Španiji, Granada, pala je:", o: ["1171.", "1453.", "1333.", "1492."], a: 3 },
+            { q: "Prvim razdobljem IZ u BiH smatra se period:", o: ["Otomanske imperije", "A-U monarhije", "Kraljevine SHS", "Kraljevine Jugoslavije"], a: 0 },
+            { q: "Kako se vršilo imenovanje reisu-l-uleme prije autonomije u AU periodu?", o: ["Sultan", "Šejhu-l-islam", "Carskim dekretom na prijedlog Zemaljske vlade", "Kurija"], a: 2 },
+            { q: "Kada je osnovan Islamski teološki fakultet u Sarajevu (danas FIN)?", o: ["1951.", "1961.", "1977.", "1992."], a: 2 },
+            { q: "Sa kojom godinom počinje savremeno razdoblje IZ BiH?", o: ["1878.", "1947.", "1993.", "2012."], a: 2 },
+            { q: "Posljednja agresija na našu domovinu desila se u razdoblju:", o: ["1985-1992.", "1992-1995.", "1995-1998.", "2000-2010."], a: 1 }
+        ],
+        "Bosanski Jezik": [
+            { q: "Tri osnovna vida izučavanja i tumačenja književnosti su:", o: ["teorija, kritika i analiza", "stilistika, historija i teorija", "stilistika, teorija i kritika", "teorija, historija i kritika"], a: 3 },
+            { q: "U stihu 'I cvrči, cvrči cvrčak...' označena je stilska figura:", o: ["metafora", "onomatopeja", "personifikacija", "hiperbola"], a: 1 },
+            { q: "Pripovjedne forme su:", o: ["ich – forma i er – forma", "du – forma i ich – forma", "ihr – forma i er – forma"], a: 0 },
+            { q: "Vrste komedije su:", o: ["naravi, situacije i društvena", "likova, naravi i ljubavna", "situacije, ljubavna i društvena"], a: 0 },
+            { q: "U primjeru 'Sabljama joj sanduk satesaše...' je figura:", o: ["asonanca", "metafora", "hiperbola", "aliteracija"], a: 3 },
+            { q: "Homerovi epovi izražavaju shvaćanje svijeta koje nazivamo:", o: ["biblijskim", "mitskim", "helenskim", "antičkim"], a: 1 },
+            { q: "Izraz 'Sizifov posao' danas označava:", o: ["iskušenje", "mudrost", "uzaludan posao", "licemjerje"], a: 2 },
+            { q: "Šta je homersko pitanje?", o: ["postojanje epova", "zašto je stradala Troja", "postojanje Homera i autorstvo", "lokacija Troje"], a: 2 },
+            { q: "Ko je napisao 'Rustem i Suhrab'?", o: ["Omer Hajjam", "Firdusi", "Šejh Sadi Širazi", "Rumi"], a: 1 },
+            { q: "Zaokruži tačnu tvrdnju o '1001 noći':", o: ["Zbirka novela prstenaste kompozicije", "Samo proza", "Sadrži i poeziju", "Perzijska književnost"], a: 0 },
+            { q: "Sastavljači prvog slavenskog pisma su:", o: ["Naum i Kliment", "Ćirilo i Metodije", "Ćirilo i Porfirogenet", "Radoje i Kliment"], a: 1 },
+            { q: "Prvo slavensko pismo je:", o: ["ćirilica", "latinica", "glagoljica", "bosančica"], a: 2 },
+            { q: "Natpisi na nadgrobnim spomenicima nazivaju se:", o: ["epigrami", "epitafi", "epistole", "elegije"], a: 1 },
+            { q: "Naš je jezik:", o: ["istočnoslavenski", "južnoslavenski", "zapadnoslavenski", "slavensko-baltički"], a: 1 },
+            { q: "Najstariji pisani spomenik u BiH je:", o: ["Povelja Kulina-bana (1183.)", "Povelja Stjepana Kotromanića (1333.)", "Povelja Kulina bana (1189.)", "Povelja Tvrtka (1380.)"], a: 2 },
+            { q: "Humanizam je pokret koji:", o: ["daje srednjovjekovni pogled", "obnavlja antičke vrijednosti (man center)", "se javlja u doba reformacije", "su vodili svećenici"], a: 1 },
+            { q: "Djelo 'Božanstvena komedija' sastoji se iz:", o: ["2 dijela/66 pjevanja", "3 dijela/99 pjevanja", "4 dijela/24 pjevanja", "3 dijela/99 pjevanja + uvod"], a: 3 },
+            { q: "'Hasanaginica' je naša poznata:", o: ["balada", "romansa", "sevdalinka", "poema"], a: 0 },
+            { q: "Prva pjesnikinja koja je pisala na bosanskom jeziku:", o: ["Habiba Stočević", "Nasiha Kapidžić", "Umihana Čuvidina", "Nafija Sarajlić"], a: 2 },
+            { q: "Pismo iz 1684. godine Petru Smiljaniću spada u:", o: ["alhamijado", "divansku", "epistolarnu", "preporodnu"], a: 2 },
+            { q: "Osnovni stih južnoslavenske narodne poezije je:", o: ["heksametar", "jedanaesterac", "deseterac", "osmerac"], a: 2 },
+            { q: "Roman 'Jadi mladog Vertera' spada u:", o: ["historijski", "roman u stihovima", "epistolarni", "realizam"], a: 2 },
+            { q: "Izbaci uljeza: moderna drama", o: ["Strindberg", "Ibzen", "Ionesko", "Čehov"], a: 2 },
+            { q: "Djelo 'Čajld Harold' je:", o: ["romantičarski ep", "tragikomedija", "poema", "roman u stihovima"], a: 2 },
+            { q: "Ko je napisao 'Gazel o Mostaru'?", o: ["Nerkesi", "Kaimija", "Derviš-paša Bajezidagić", "Fevzija"], a: 2 },
+            { q: "Pedro Kalderon de la Barka napisao je:", o: ["Život je san", "Evgenije Onjegin", "Jadi mladog Vertera", "Evgenija Grande"], a: 0 },
+            { q: "Motiv melanholičnog junaka obrađuje se u:", o: ["Evgenije Onjegin", "Čajld Harold", "Tena", "Zlatarovo zlato"], a: 1 },
+            { q: "Figura u 'To sada gleda on, / To sada misli on...':", o: ["epifora", "simploha", "anadiploza", "anafora"], a: 0 },
+            { q: "Roman 'Evgenije Onjegin' pisan je kao:", o: ["drama", "roman", "roman u stihu", "epistolarni"], a: 2 },
+            { q: "Kojoj književnosti pripada ep 'Gilgameš'?", o: ["hebrejskoj", "indijskoj", "perzijskoj", "babilonsko-asirskoj"], a: 3 },
+            { q: "Historijski razlozi pjesme 'Rodu o jeziku':", o: ["Promocija hrvatskog jezika (ilirac)", "Promocija mađarskog", "Strani jezici u Hrvatskoj", "Hrvatski van Hrvatske"], a: 0 },
+            { q: "Period između romantizma i realizma u Hrvatskoj je:", o: ["Mažuranićevo doba", "Šenoino doba", "Preradovićevo doba", "Matoševo doba"], a: 1 },
+            { q: "Zbornik 'Narodne pjesme Muhamedovaca...' napisao je:", o: ["Alberto Fortis", "Bašagić", "Kosta Hormann", "Ljubušak"], a: 2 },
+            { q: "Karakteristika romantizma koje NEMA u realizmu:", o: ["provincijalizmi", "svakidašnji govor", "lirsko pjesništvo/metafore"], a: 2 },
+            { q: "Kojem pravcu je pripadao Shakespeare?", o: ["Romantizmu", "Realizmu", "Renesansi", "Klasicizmu"], a: 2 },
+            { q: "Prvi bošnjački roman je:", o: ["Bez nade", "Zeleno busenje", "Minka", "Ponornica"], a: 1 },
+            { q: "Autor pripovijetke 'Šinjel' je:", o: ["Dostojevski", "Balzak", "Gogolj", "Tolstoj"], a: 2 },
+            { q: "Onore de Balzak autor je djela:", o: ["Šinjel", "Rat i mir", "Evgenija Grande", "Fiškal"], a: 2 },
+            { q: "Raskolnikov je glavni junak u:", o: ["Evgenija Grande", "Zločin i kazna", "Rat i mir", "Ana Karenjina"], a: 1 },
+            { q: "Koji pisac NIJE predstavnik razvijenog realizma?", o: ["Flober", "Turgenjev", "Stendal", "Gončarov"], a: 2 },
+            { q: "Epoha koju odlikuju društvene pojave i tip kao žrtva sukoba:", o: ["prosvjetiteljstvo", "avangarda", "realizam", "barok"], a: 2 },
+            { q: "Moderna podrazumijeva pravce kao što su:", o: ["dadaizam", "socijalna literatura", "parnas, simbolizam, impresionizam", "impresionizam i ekspresionizam"], a: 2 },
+            { q: "Dominantni žanrovi moderne su:", o: ["lirska pjesma i drama", "epovi i poezija", "novela, roman i drama", "roman i pripovijetka"], a: 0 },
+            { q: "Zaokruži djelo Abdurezaka H. Bjelevca:", o: ["Sa strana zamagljenih", "Haremske novele", "Pod drugim suncem", "Na starim ognjištima"], a: 1 },
+            { q: "Musa Ćazim Ćatić uređivao je časopise:", o: ["Nada i Biser", "Behar i Biser", "Nada i Nova riječ", "Bošnjak i Behar"], a: 1 },
+            { q: "Pisac djela 'U traganju za izgubljenim vremenom':", o: ["Kami", "Marsel Prust", "Hemingvej", "Kafka"], a: 1 },
+            { q: "Prvi urednik časopisa 'Behar' bio je:", o: ["Osman Nuri Hadžić", "Mulabdić", "Bašagić", "Ćatić"], a: 2 },
+            { q: "Koji pjesnik je opjevao rodnu Hercegovinu?", o: ["Andrić", "Antun Branko Šimić", "Cesarić", "Krleža"], a: 1 },
+            { q: "Djelo koje NIJE napisao Derviš Sušić:", o: ["Uhode", "Parergon", "Konak", "Tale"], a: 2 },
+            { q: "Osnovni motiv zbirke 'Provincija u pozadini' (Hasan Kikić):", o: ["ljubav prema Bogu", "ljubav prema ženi", "rat", "snaga vlasti"], a: 2 },
+            { q: "Pripovijetka 'Baraka pet be' (Krleža) govori o:", o: ["besmislu rata", "revoluciji", "povratku ranjenika", "radničkom naselju"], a: 0 },
+            { q: "Romane 'Na Drini ćuprija' i 'Prokleta avlija' napisao je:", o: ["Krleža", "Kovačić", "Ivo Andrić", "Đikić"], a: 2 },
+            { q: "Glavni lik romana 'Starac i more':", o: ["Santjago", "Hari Haler", "Merso", "Hasan-dedo"], a: 0 },
+            { q: "Pripovijetke 'Plaćenik' i 'Kaimija' napisao je:", o: ["Meša Selimović", "Derviš Sušić", "Andrić", "Ibrišimović"], a: 1 },
+            { q: "Autor citata: 'Ne mogu da pričam šta je bilo u Hoćinu...'?", o: ["Kulenović", "Vuletić", "Ćopić", "Meša Selimović"], a: 3 },
+            { q: "Likovi Mula Ibrahim i Osman Vuk su u romanu:", o: ["Deveto čudo", "Prokleta avlija", "Tvrđava", "Derviš i smrt"], a: 2 },
+            { q: "Autor djela 'Talhe':", o: ["Horozović", "Karahasan", "Nedžad Ibrišimović", "Sidran"], a: 2 },
+            { q: "U kojem gradu se događa radnja 'Zelenog busenja'?", o: ["Sarajevo", "Maglaj", "Gradačac", "Doboj"], a: 1 },
+            { q: "Bodlerov 'Albatros' simbolizira:", o: ["sretnog čovjeka", "prihvaćenog umjetnika", "avanturista", "umjetnika kojeg društvo ne razumije"], a: 3 },
+            { q: "Književni postupak pozivanja na druge tekstove:", o: ["fabularizacija", "plagijat", "intertekstualnost", "poetizacija"], a: 2 },
+            { q: "Bodler je pjesnik zbirke:", o: ["Vlati trave", "Pijanog broda", "Cvijeća zla", "Gavrana"], a: 2 },
+            { q: "Duhovni otac realizma je:", o: ["Bodler", "Balzak", "Bajron", "Stendal"], a: 1 },
+            { q: "Balzak je svoje stvaralaštvo nazvao:", o: ["Božanstvena komedija", "Ljudska komedija", "Komedija del arte", "Komedija naravi"], a: 1 },
+            { q: "Dostojevski je najveći predstavnik:", o: ["kritičkog realizma", "socrealizma", "nadrealizma", "psihološkog realizma"], a: 3 },
+            { q: "Koji pokret NE pripada avangardi?", o: ["Futurizam", "dadaizam", "ekspresionizam", "impresionizam"], a: 3 },
+            { q: "Najvažniji autor teatra apsurda je:", o: ["Sofoklo", "Breht", "Samuel Beket", "Šekspir"], a: 2 },
+            { q: "Pravopisno tačna rečenica:", o: ["Nije stjeo...", "Nije htio uzeti ćudan...", "Nije htio uzeti čudan poklon.", "Nije htjeo..."], a: 2 },
+            { q: "Ispravno napisano:", o: ["mi bismo sjeli", "mi bi sjeli", "mi bismo sijeli"], a: 0 },
+            { q: "Pravilan niz riječi:", o: ["čajđinica...", "čajdžinica, ja bi...", "čajdžinica, ja bih govorio, obavijestiti, tužilac"], a: 2 },
+            { q: "Ispravan niz:", o: ["čovjek-ljudi-ljudski", "čovjek-čovjeci-ljudski", "čovijek...", "ćovjek..."], a: 0 },
+            { q: "Pravopisno tačno:", o: ["jedamput", "jedanput", "jedan put", "jedanputa"], a: 1 },
+            { q: "Tačno napisano:", o: ["Han-pijesak...", "Han-Pijesak, aeroklub, nadaleko, cigar-papir", "Hanpijesak..."], a: 1 },
+            { q: "Pravilna rečenica (Mostar):", o: ["mostarski most i stadion Veleža", "cjelog svjeta...", "mostarski most i Stadion Veleža"], a: 2 },
+            { q: "Pravilna rečenica (A.B. Šimić):", o: ["Bosanskohercegovački...", "Bosansko - Hercegovački...", "Antun Branko Šimić, bosanskohercegovački pjesnik..."], a: 2 },
+            { q: "Tačan niz (Era/Kanton):", o: ["Renesansa, realizam, tuzlanski...", "renesansa, realizam, Tuzlanski kanton", "Renesansa, Realizam..."], a: 1 },
+            { q: "Pravilni interpunkcijski znaci:", o: ["Doći ćemo“, povikaše...", "povikaše djeca, „Da opet...", "„Doći ćemo”, povikaše djeca, „da opet zajedno beremo trešnje!“"], a: 2 },
+            { q: "Koliko riječi ima rečenica 'Nemogu,učimpromjenljive...'?", o: ["12", "13", "14", "16"], a: 1 },
+            { q: "Glagol 'češljati se' je:", o: ["pravi pravi", "nepravi povratni", "uzajamno-povratni", "prijelazni"], a: 0 },
+            { q: "Glasovne varijante zovu se:", o: ["stilemi", "alofoni", "fonemi", "grafemi"], a: 1 },
+            { q: "U riječi 'raščistiti' izvršene su promjene:", o: ["jednačenje po zvučnosti i mjestu tvorbe", "jednačenje i gubljenje", "gubljenje i jotovanje"], a: 0 },
+            { q: "Konjugacija obuhvata kategorije:", o: ["rod, padež...", "lice, vrijeme, rod, broj, vid, stanje", "lice, vrijeme, stanje, vid, broj", "lice, vrijeme, stanje, rod, vid, broj, način"], a: 3 },
+            { q: "Najmanji dio riječi sa značenjem je:", o: ["morfem", "fonem", "sintaksem", "stilem"], a: 0 },
+            { q: "Zamjenica 'koji' je pravilna u:", o: ["profesor kojeg volim slušati.", "crtež kojeg volim...", "roman kojeg...", "kaput kojeg..."], a: 0 },
+            { q: "Imenice u 'Stari kadija je gledao pred sobom valiju':", o: ["Stari i valija", "Kadija i valija", "Stari i kadija", "Sobom i valija"], a: 1 },
+            { q: "Predikati u 'Najteže mi je padalo što je to bio čovjek...':", o: ["je padalo i je čovjek", "je padalo i je bio", "je padalo i je bio čovjek", "je padalo i je to bio čovjek"], a: 1 },
+            { q: "Vrsta rečenice: 'Sve bih prodao, a nadu ne bih.':", o: ["Rastavna", "Suprotna", "Mjesna", "Sastavna"], a: 1 },
+            { q: "'Na ulicama' u rečenici je odredba:", o: ["mjesta", "vremena", "načina", "uzroka"], a: 0 },
+            { q: "Objekat je:", o: ["supstantivni član u zavisnom padežu koji otvara glagol", "Imenički član", "Nominativ", "Dodatak subjektu"], a: 0 },
+            { q: "Šta proučava semantika?", o: ["stilove", "strukturu", "sadržaj, značenje i smisao", "raslojavanje"], a: 2 },
+            { q: "U 'Nešto je zapelo za konop...' subjekat je:", o: ["konop", "rub", "nešto", "obale"], a: 2 },
+            { q: "U 'Danas je padala kiša', objekat je:", o: ["kiša", "danas", "je padala"], a: 0 },
+            { q: "Veznici suprotnih rečenica su:", o: ["samo, jedino...", "a, ali, nego, već", "ili-ili", "iako, mada..."], a: 1 },
+            { q: "Rečenica 'iako sam to obećao' je:", o: ["vremenska", "uzročna", "dopusna", "namjerna"], a: 2 },
+            { q: "Antonimi su riječi:", o: ["istog značenja", "suprotnog značenja", "sličnog značenja", "identičnog značenja"], a: 1 },
+            { q: "Riječi 'mutvak' i 'sohbet' su:", o: ["žargonizmi", "dijalektizmi", "vulgarizmi", "orijentalizmi"], a: 3 },
+            { q: "U 'Tu zanimljivu knjigu brzo je pročitao', 'brzo' je:", o: ["prilog", "pridjev", "imenica", "riječca"], a: 0 },
+            { q: "Sinonimi zid-duvar, prozor-pendžer su:", o: ["nepravi", "potpuni", "djelimični", "nisu sinonimi"], a: 1 },
+            { q: "U 'Vršimo pranje kose' prisutan je:", o: ["složeni", "prosti", "dekomponirani predikat", "imenski"], a: 2 },
+            { q: "Bliži objekat se pojavljuje u:", o: ["genitivu s prijedlogom", "akuzativu bez prijedloga", "akuzativu sa prijedlogom", "genitivu bez prijedloga"], a: 1 },
+            { q: "Rečenica 'Cvijeće je razapelo... i latice skaču...' je:", o: ["sastavna", "rastavna", "suprotna", "isključna"], a: 0 },
+            { q: "Rečenica 'Ona čita lijepu knjigu' je:", o: ["prosta", "složena", "prosto-proširena", "jednostavna"], a: 2 },
+            { q: "Rečenica 'Ja nisam prvi koji je ovamo stigao...' je:", o: ["adverbijalna", "načinska", "atributska klauza", "objekatska"], a: 2 },
+            { q: "Interjekcije spadaju u:", o: ["uzvike", "veznike", "riječce", "imenice"], a: 0 },
+            { q: "Koji stil je u rečenici 'Neka se gospođa izvoli javiti...'?", o: ["naučni", "književni", "novinarski", "administrativno-pravni"], a: 3 }
+        ],
+		 "Arapski Jezik": [
+            { q: "حدد الكلمات التي تبدأ بالحروف الشمسية:", o: ["القلم، البيت، اليد", "المدرسة، الكتاب، الدار", "الرسول، السفر، الضيف", "أيد، أدب، أسس"], a: 2 },
+            { q: "ما هي الحروف التي لا تتصل بما بعدها؟", o: ["ل-ع-ج", "و-ر-أ", "ن-ف-س", "ط-ه-ي"], a: 1 },
+            { q: "ما هي ضمائر الرفع المنفصلة؟", o: ["نحن – هما – أنت", "إياك – إياي – إياكم", "تلك – هؤلاء – هذا", "ها – كما – ك"], a: 0 },
+            { q: "ما هي الضمائر المتصلة؟", o: ["نحن – هما – أنت", "إياك – إياي – إياكم", "تلك – هؤلاء – هذا", "ها – كما – ك"], a: 3 },
+            { q: "ما هي أسماء الإشارة للقريب؟", o: ["نحن – هما – أنت", "إياك – إياي – إياكم", "هذه – هؤلاء – هذا", "ها – كما – ك"], a: 2 },
+            { q: "ما هي أسماء الإشارة للبعيد؟", o: ["نحن – هما – أنت", "ذلك – تلك – أولئك", "هذه – هؤلاء – هذا", "ها – كما – ك"], a: 1 },
+            { q: "حدد الأسماء المرفوعة:", o: ["مهندسون – مسلمات – رجلان – مدير", "إياها – دفتر – عالمين – كتابين", "كم – في – كيف – إلى", "أبا بكر – رجال – معلما – جلوسا"], a: 0 },
+            { q: "ما هو الجواب الصحيح عن السؤال: هل عندك كتاب جديد؟", o: ["نعم، لهم كتاب جديد", "نعم، لي كتاب جديد", "نعم، لك كتاب جديد", "نعم، لها كتاب جديد"], a: 1 },
+            { q: "عين الجملة الاسمية:", o: ["يجلس محمد في الصف", "لم يدرس عمر اللغة العربية", "سوف تسافر أختي إلى موستار", "محمد طالب مجتهد"], a: 3 },
+            { q: "عين الجملة الاسمية التي خبرها الجار والمجرور:", o: ["يجلس الطالب في الصف", "في البيت ضيف", "المهندس نشيط", "السبورة خضراء"], a: 1 },
+            { q: "عين الجملة الصحيحة (اللاعبان):", o: ["اللاعبان سريعان", "عثمان نشيطة", "الشارع طويل", "زينب جميل"], a: 0 },
+            { q: "عين الجملة الصحيحة (السيارتان):", o: ["هاتان السيارتان غاليتان", "الرجل سكران", "شارع طويل", "سمية وعائشة طالبة"], a: 0 },
+            { q: "عين الجملة الصحيحة (المسلمون):", o: ["العاملان مجتهدون", "يوسف الكريم", "هاتان الأم رحيمة", "المسلمون ساجدون في المسجد"], a: 3 },
+            { q: "عين الجملة الصحيحة (الفتيات):", o: ["صوت جميل", "الفتيات نشيطات وجميلات", "البنت صغير", "النافذة مفتوح"], a: 1 },
+            { q: "عين الجملة الصحيحة (المدارس):", o: ["الأبواب مغلقة", "الابن ذكية", "المدارس القديمة", "أقلام الجديدة"], a: 2 },
+            { q: "عين الجملة الصحيحة (الأطفال):", o: ["الشبابيك مفتوح", "العمال الغايبون", "الأطفال ذاهبون إلى الحديقة", "الرجال حاضر"], a: 2 },
+            { q: "حدد الاسم المؤنث (كلمة):", o: ["خليفة", "كلمة", "حمزة", "صفوت"], a: 1 },
+            { q: "حدد الاسم المؤنث (أخت):", o: ["أخت", "صوت", "حوت", "كتاب"], a: 0 },
+            { q: "حدد الاسم المؤnث (شمس):", o: ["شمس", "طفل", "ولد", "صيف"], a: 0 },
+            { q: "حدد الاسم المؤنث (عين):", o: ["كرسي", "سرير", "معطف", "عين"], a: 3 },
+            { q: "اختر صفة مناسبة للخبر: ترافنيك مدينة ................", o: ["جميل", "جميلة", "الجميلة", "جميلتان"], a: 1 },
+            { q: "اختر صفة مناسبة للمبتدأ: الكتب .................", o: ["نافعات", "نافع", "نافعة", "نافعون"], a: 2 },
+            { q: "اشتري أحمد سيارة ............", o: ["أبيض", "بيضاء", "الأبيض", "بياضا"], a: 1 },
+            { q: "أحمد ............ من صالح.", o: ["الأنشط", "نشيط", "أنشط", "النشيط"], a: 2 },
+            { q: "ضع دائرة حول الجواب الصحيح (ليس):", o: ["ليسوا الطلاب غائبين", "الطلاب ليس غائبين", "ليسوا الطلاب غائبون", "ليس الطلاب غائبين"], a: 3 },
+            { q: "ضع دائرة حول الجواب الصحيح (كانت):", o: ["كانت سمية مريضة", "أصبحت النهار مشمس", "الطالبات صرن ناجحات", "ما زالوا العمال غائبين"], a: 0 },
+            { q: "ضع دائرة حول الجواب الصحيh (إن):", o: ["إن سمية مريضة", "إنهما كريمان", "كأن الطالبات مدرسات", "ليت المسلمون عادلون"], a: 0 },
+            { q: "مريم وزينب ...................", o: ["شربا الحليب", "شربتا الحليب", "شرب الحليب", "شربتا الحليب (صحيح)"], a: 3 },
+            { q: "محمد ......... الشاي.", o: ["شرب", "ما شرب", "لم يشرب", "ليس شرب"], a: 1 },
+            { q: "المسلمات ............... حول الكعبة.", o: ["يطفن", "يطفن (تكرار)", "تطفن", "تطوف"], a: 2 },
+            { q: "اللاعبان لن ............. الملابس الرياضية.", o: ["يلبسان", "يلبسا", "يلبسون", "يلبس"], a: 1 },
+            { q: "أي جملة تدل على المستقبل؟", o: ["سيعود المهاجرون إلى بيوتهم", "يعود المهاجرون", "عادوا المهاجرون", "لم يعد المهاجرون"], a: 0 },
+            { q: "أي جملة تدل على الأمر؟", o: ["يا أيها المسلمون، اذهبوا إلى المسجد", "المسلمون ذاهبون", "المسلمون يذهبون", "المسلمون ذهبوا"], a: 0 },
+            { q: "أي جملة تدل على النهي؟", o: ["لا يلعب يوسف كرة اليد", "يا يوسف لا تلعب كرة اليد", "يا يوسف لن تلعب", "يوسف لا يلعب"], a: 1 },
+            { q: "العاملات ........... في الحديقة.", o: ["تمشين", "لعب", "ذهبت", "جلست"], a: 0 },
+            { q: "أنت لم ......... يديك يا عائشة!", o: ["تغسلي", "تغسلين", "غسلت", "تغسل"], a: 0 },
+            { q: "عائشة لن ........... إلى السوق كل يوم.", o: ["يذهب", "تغسل", "تذهب", "يغسل"], a: 2 },
+            { q: "أنا قرأت ...........", o: ["سبع كتب", "سبعة كتاب", "سبعة كتب", "سبع كتابا"], a: 2 },
+            { q: "زميلي يسكن في ...........", o: ["الدور تاسع", "دور التاسع", "التاسع الدور", "الدور التاسع (صحيح)"], a: 3 },
+            { q: "يحترم ........... المدرسين.", o: ["طالب المدرسة", "طلاب المدرسة", "طالبات المدرسة", "طالبة المدرسة"], a: 0 },
+            { q: "حدد الجملة التي فيها فعل مبني للمجهول:", o: ["تمنح الجوائز للطلاب المتفوقين", "يدرس أحمد اللغة العربية", "يكرم المدير المدرسين", "تشارك زينب في المسابقة"], a: 0 },
+            { q: "حدد الجملة التي فيها اسم فاعل واسم مفعول:", o: ["المسجد بعيد عن المطار", "المجاهد يهتم بمستقبل وطنه", "تستعمل المكنسة في المنزل", "فتح العامل باب المكتب بالمفتاح"], a: 1 },
+            { q: "حدد الجملة الصحيحة (عدد):", o: ["في الصف أربعة وأربعون طالبة", "حضر صلاة الجمعة سبع وستون مسلما", "قضى صالح في الحج أربعة وعشرين يوما", "قرأت في هذا العام سبعة وثلاثين قصة"], a: 0 },
+            { q: "حدد العدد الترتيبي الصحيح:", o: ["هذا هو السؤال الرابع والأربعون", "شرح المدرس اليوم الدرس الخامسة والعشرين", "ثمن هذه البدلة ستة وخمسون دينارا", "في هذا الشهر ثلاثون يوما"], a: 0 },
+            { q: "حدد الجملة التي فيها فعل على وزن التفعيل:", o: ["يستقبل بلال الضيوف", "تنظف العاملة المستشفى", "يسافر المهندس إلى ألمانيا", "ألقى موسى عصاه"], a: 1 },
+            { q: "حدد الجملة التي فيها فعل على وزن المفاعلة:", o: ["يستغفر المسلم الله", "ينطلق القطار", "يختبر المدرس الطلاب", "جاهد أبي في سبيل الله"], a: 3 },
+            { q: "حدد الجملة التي فيها فعل على وزن الإفعال (1):", o: ["أرسل الله رسوله", "بعث الله رسوله بالهدى", "زميلي يتحدث بالعربية", "أنا أفضل القهوة"], a: 0 },
+            { q: "حدد الجملة التي فيها فعل على وزن الإفعال (2):", o: ["أرسل الله رسوله إلى كافة الناس", "بعث الله رسوله بالهدى", "زميلي يتحدث بالعربية", "أنا أفضل القهوة"], a: 0 },
+            { q: "حدد الجملة التي فيها فعل على وزن التفعّل:", o: ["هل التسامح خلق المسلم؟", "احمر وجه عائشة من الحياء", "تزوج محمد صلى الله عليه وسلم من خديجة", "حضر المدير درس اللغة العربية"], a: 2 },
+            { q: "حدد الجملة التي فيها فعل على وزن التفاعل:", o: ["استخرجت الفعل من الجملة", "ألبست الأم ولدها القميص", "انقلبت السيارة في الطريق", "المسلمون يتعاونون على البر والتقوى"], a: 3 },
+            { q: "حدد الجملة التي فيها فعل على وزن الانفعال:", o: ["تبرعت بالدم عدة مرات", "جاء زيد يضحك", "انطلقت الحافلة من المحطة", "عمر يساعد ابنه"], a: 2 },
+            { q: "حدد الجملة التي فيها فعل على وزن الافتعال:", o: ["انتظرت صديقي في المحطة", "انفجرت القنبلة في المستودع", "انكسر زجاج النافذة", "اندلع الحريق في المبنى"], a: 0 },
+            { q: "حدد الجملة التي فيها فعل على وزن الافعلال:", o: ["هل تستعمل المسواك؟", "احمر وجه الفتاة من الحياء", "تحدثت مع زميلي ساعتين", "رجع الجنود من المعركة منتصرين"], a: 1 },
+            { q: "حدد الجملة التي فيها فعل على وزن الاستفعال:", o: ["عجلوا بالصلاة قبل الموت", "استمع إلى الأذان يا أحمد", "استعجل بالزواج يا بني!", "سال الدم من الجرح"], a: 2 },
+            { q: "حدد العدد الصحيح (ألف ليلة):", o: ["قرأت كتاب ألف ليلة وليلة", "يدرس في مدرستنا خمسمائة وواحد وثلاثون طالبا", "اشتريت مائتين وخمسين متر من حرير", "كانت سراييفو محاصرة ألف وأربعمائة وخمسة وعشرين يوما"], a: 1 },
+            { q: "حدد العدد الترتيبي الصحيح (صفحة):", o: ["خلال أربعة أشهر أخيرة", "يعمل في المصنع مائتان وخمسة وثلاثون عاملا", "ذكر اسمه في الصفحة الخامسة والعشرين والمائة", "ولدت سنة ألفين"], a: 2 },
+            { q: "حدد الجملة التي استعمل فيها اسم المرة صحيحا:", o: ["كم مرة زرت سراييفو؟", "قرأت هذا الكتاب مرتين", "قلت لك هذا مائة مرات", "تغديت في هذا المطعم عشرين مرات"], a: 0 },
+            { q: "حدد الجملة التي استعمل فيها اسم المنسوب صحيحا:", o: ["ما الفرق بين العادات الشرقية والعادات الغربية؟", "يدرس أحمد في الجامعة الإسلامي", "هؤلاء البنات تركي", "اشتريت الساعة اليدوية"], a: 0 },
+            { q: "حدد الجملة التي استعمل فيها (أحد وبعض) صحيحا:", o: ["فاطمة أحد الطالبات", "دخلنا البيت ولم يشعر بنا أحد", "يساعد الطلاب بعضهم بعضا", "كسر إحدى الطلاب الزجاج"], a: 1 },
+            { q: "حدد الجملة التي استعمل فيها الممنوع من الصرف صحيحا:", o: ["رأيت أحمدا في الملعب", "فتحت الأبواب بمفاتيح", "سمعت صوت فاطمة", "الساعة الخامسة وعشر دقائق"], a: 2 },
+            { q: "حدد الجmlة التي استعمل فيها اسم التفضيل صحيحا:", o: ["هذا أهم امتحان في حياتي", "إسماعيل أنشط الطالبات", "أنا أستخدم القلم الأحمر", "محمد صغرى الطالبات"], a: 0 },
+            { q: "حدد الجملة التي استعمل فيها المنادى صحيحا:", o: ["يا أيها الطالبات لا تخرجن", "يا أيتها الطلاب اكتبوا الواجب", "يا رجل لا تشرب الخمر!", "يا مسلمين صلوا صلاة الفجر"], a: 0 },
+            { q: "حدد الجملة التي فيها فعل رباعي مجرد:", o: ["تتكلم مريم بالإنجليزية", "صحح الأخطاء في النص", "أنزل الله القرآن", "ترجمت الكتاب من الإنجليزية"], a: 3 },
+            { q: "حدد الجملة الصحيحة (فعل مضعف):", o: ["هرب الجندي من المعركة", "فروا الجنود من المعركة", "علم المدرس الطفل السباحة", "أدى المواطن الواجب"], a: 1 },
+            { q: "حدد الجملة الصحيحة (فعل مهموز):", o: ["يا محمد، خذ هذا الكتاب!", "أرسل الله النبيين", "أنا أجلس في المحطة", "نحن نثق فيكم"], a: 0 },
+            { q: "حدد الجملة الصحيحة (فعل مثال):", o: ["ادع إلى سبيل ربك بالحكمة", "نوى جدي الحج", "يا طالب، قف أمام السبورة!", "هل أكلت الموز؟"], a: 2 },
+            { q: "حدد الجملة الصحيحة (فعل أجوف):", o: ["المشي مفيد للصحة", "أنا صمت شهر رمضان كاملا", "هي دفعت ذاك الحساب", "قضيت العطلة في القرية"], a: 1 },
+            { q: "حدد الجملة الصحيحة (فعل ناقص):", o: ["يا طالب، لا ترم الأوراق", "العامل لم يعد من المصنع", "ضع علامة الصواب", "إن قلت فلا تخف"], a: 0 },
+            { q: "حدد الجملة الصحيحة (فعل لفيف):", o: ["المسلمون يصحون من النوم", "طاف الحاج حول البيت", "وصل المدرس متأخرا", "أحب أن نجلس وأن نشوي اللحم"], a: 3 },
+            { q: "حدد الجملة التي فيها مفعول به:", o: ["قرأت قصة شيقة", "يذهب الطالب إلى المدرسة", "نام الطفل نوما عميقا", "حضر الطلاب إلا طالبا"], a: 0 },
+            { q: "حدد الجملة التي فيها مفعول مطلق:", o: ["دخل المدرس الصف مسرعا", "جلس زميلي مع الوزير جلسة", "أرسل الله محمدا رحمة للعالمين", "رجع الأب إلى الدار مطلع الفجر"], a: 1 },
+            { q: "حدد الجملة التي فيها مفعول فيه:", o: ["يقف الطلاب أمام المكتبة", "لا إكراه في الدين", "بلال أكثر منك مالا", "قرأت الطالبة الكتاب إلا صفحتين"], a: 0 },
+            { q: "حدد الجملة التي فيها مفعول له:", o: ["لعب الأطفال كرة القدم", "يحفظ التلاميذ السورة صباحا", "خرج العامل من المصنع خروجا سريعا", "تبرع المسلم بالمال رغبة في مساعدة المحتاجين"], a: 3 },
+            { q: "حدد الجملة التي فيها حال:", o: ["جلسنا بالأمس ساعتين", "جاء الطلاب إلا عليا", "لا تشرب الماء باردا", "تمر بنا الأيام مر السحاب"], a: 2 },
+            { q: "حدد الجملة التي فيها استثناء:", o: ["رجع المجاهدون من المعركة ظافرين", "فهمت الأسئلة إلا سؤالا", "زرع الفلاح مزرعة قمحا", "شربت الكأسين من الحليب"], a: 1 },
+            { q: "حدد الجملة التي فيها تمييز:", o: ["شجرة التفاح أكثر ثمارا", "كان الولد مريضا", "لا إله إلا الله", "إن الحق واضح"], a: 0 },
+            { q: "حدد الجملة التي فيها مفعول معه:", o: ["كتب الطالب الأجوبة كلها", "صار الجو باردا", "مشيت والنهر", "تفتح الأبواب بمفاتيح"], a: 2 },
+            { q: "حدد الجملة التي فيها خبر من أخوات كان:", o: ["إن المسلمين أمة واحدة", "ليت الطالب مجتهد", "لبست ثيابا جديدة", "ليس النصر بعيدا"], a: 3 },
+            { q: "حدد الجملة التي فيها خبر من أخوات إن:", o: ["لعل الله يحدث بعد ذلك أمرا", "لعب الطفل ألعاب الحاسوب", "لبث علي في السجن أربع سنوات", "لقب رسول الله بالأمين"], a: 0 },
+            { q: "حدد الجملة التي فيها اسم فاعل:", o: ["وجدت الشرطة رجلا مقتولا", "نصلي جميع الصلوات في المسجد", "المدرج خرج من الملعب", "أخذت الكتاب من المكتبة"], a: 2 },
+            { q: "حدد الجملة التي فيها اسم مفعول:", o: ["المدرج خرج من الملعب", "وجدت الشرطة رجلا مقتولا", "نصلي جميع الصلوات في المسجد", "أخذت الكتاب من المكتبة"], a: 1 },
+            { q: "حدد الجملة التي استعمل فيها اسم التصغير:", o: ["خالد يسكن في بيت واسع", "إن محمدا عالم كبير", "بلال ريبيري لاعب مشهور", "حسين يدرس في مدرستنا"], a: 2 },
+            { q: "حدد الجملة التي استعمل فيها حرف الجر:", o: ["انتظرت زميلي أمام المدرسة", "وصل القطار من سراييفو", "يجلس أحمد خلف محمد", "دخل الطلاب الصف"], a: 1 },
+            { q: "حدد الجملة التي استعمل فيها ظرف الزمان أو المكان:", o: ["وصلت الحافلة من سراييفو قبل ساعة", "الحافلة واقفة في المحطة", "يدخل الركاب إلى الحافلة", "سافرت إلى سراييفو بالحافلة"], a: 0 },
+            { q: "حدد الجملة التي استعمل فيها اسم الزمان أو المكان:", o: ["المشرك لا يؤمن بالله", "المسافر يقصر الصلاة", "هذا الجامع جميل جدا", "تطلع الشمس من المشرق"], a: 3 },
+            { q: "حدد الجملة التي استعمل فيها اسم الآلة:", o: ["بني هذا المسجد قبل سنتين", "الفأس حاد", "لا يوجد مصعد في هذا المبنى", "الحاسب الآلي جديد وغال"], a: 1 },
+            { q: "حدد الجملة التي استعمل فيها (لا) لنفي الجنس:", o: ["لا يوجد مصعد في هذا المبنى", "لا طالب في الصف", "أحب حسنا لا أحمد", "يا محمد لا تخرج من البيت"], a: 1 },
+            { q: "حدد الجملة التي استعمل فيها الفعل المتعدي:", o: ["الطلاب يقرأون الكتب", "يقوم الولد من النوم متأخرا", "الولد يجلس أمام التلفاز", "المريض يشعر بالألم"], a: 0 },
+            { q: "حدد الجملة التي استعمل فيها الفعل اللازم:", o: ["المريض يشرب الدواء", "الولد يشاهد التلفاز", "المدرس يجلس على الكرسي", "يوسف يمزق الرسالة"], a: 2 },
+            { q: "حدد الجملة التي استعمل فيها أداة الاستفهام:", o: ["ما اسمك؟", "لا أفهم ما تقول", "ما كتب الطالب الواجب", "ما أجمل الطقس هذه الأيام"], a: 0 },
+            { q: "حدد الجملة الشرطية:", o: ["إن تذاكر تنجح", "إن الجو جميل", "إنما المؤمنون إخوة", "إن أنا إلا نذير مبين"], a: 0 },
+            { q: "حدد الجملة الموصولة:", o: ["أحب الطالب الذي يحافظ على الصلوات الخمس", "ماذا تقول يا طالب؟", "لماذا أنت غضبان؟", "أين يقع مستشفى القلب؟"], a: 0 },
+            { q: "حدد الجملة المنفية:", o: ["لا شيء في جيبي", "لا يسافر محمد إلى سراييفو", "أحب اللحم لا الأرز", "لا تخرج من بيتك بدون إذن أبيك"], a: 1 },
+            { q: "حدد الجملة المتعدية إلى مفعولين:", o: ["أرسل أحمد الرسالة إلى أبيه", "حفظ الطفل السورة", "سمر يدرس الطالب السباحة", "تزوج عمر العام الماضي"], a: 2 },
+            { q: "حدد الجملة التي فيها أسلوب التعجب:", o: ["ما هذا السؤال؟", "هو أنشط منك", "ما أكرم محمد جاره", "ما أجمل هذه الفتاة!"], a: 3 },
+            { q: "حدد الجملة التي فيها أسلوب المدح أو الذم:", o: ["نعم الرجل إبراهيم", "نعم أنا أدرس في كلية الطب", "نام الولد مبكرا", "هو رجل كريم"], a: 0 },
+            { q: "حدد الجملة التي فيها حرف العطف:", o: ["سمعت ذاك الخبر", "والله لن أكذب عليك شيئا", "أكلت التفاح والموز", "مشيت والنهر"], a: 2 },
+            { q: "حدد الجملة التي استعمل فيها المصدر بدلا من المضارع المنصوب:", o: ["أفضل مشاهدة الأفلام على المباريات", "أنت لا تريد أن تخرج من الصف", "صليت صلاة الفجر في الجامع", "لا ينبغي أن تتأخر عن الحصة"], a: 0 },
+            { q: "حدد الجملة التي استعمل فيها العدد صحيحا (تاريخ):", o: ["ولدت في العاشر من شهر أغسطس سنة ألف وتسعمائة وثمان وتسعين", "ولدت في العاشر من شهر أغسطس عام ألف وتسعمائة وثمان وتسعين", "ولدت في العاشر من شهر أغسطس سنة ألف وتسعمائة وثماني وتسعين", "ولدت في العاشر من شهر أغسطس عام ألف وتسعمائة وثمانية وتسعين"], a: 0 }
+        ],
+        "Engleski Jezik": [
+            { q: "The company decided to ___ a new policy to improve employee satisfaction.", o: ["implement", "imply", "apply", "impose"], a: 0 },
+            { q: "She has a very ___ job at the law firm.", o: ["respectable", "respectful", "respected", "respect"], a: 0 },
+            { q: "I can’t ___ that I’ve ever been to a place like this.", o: ["remember", "recall", "remind", "memorize"], a: 1 },
+            { q: "The investigation showed no ___ of foul play.", o: ["indicator", "evidence", "sign", "symptom"], a: 1 },
+            { q: "My cousin ___ me to join her in Spain for a holiday.", o: ["invited", "proposed", "suggested", "persuaded"], a: 0 },
+            { q: "He spent a ___ amount of money on that new car.", o: ["huge", "strong", "wide", "significant"], a: 3 },
+            { q: "I don’t have a clear ___ of what happened.", o: ["mind", "concept", "picture", "vision"], a: 2 },
+            { q: "They have reached a final ___ on the project.", o: ["agreement", "arrangement", "position", "conclusion"], a: 3 },
+            { q: "He has a ___ interest in painting and art.", o: ["strong", "sharp", "intense", "keen"], a: 3 },
+            { q: "Which word means the opposite of 'expand'?", o: ["Shrink", "Widen", "Grow", "Develop"], a: 0 },
+            { q: "The manager’s decision was rather ___.", o: ["controlling", "controversial", "contradicting", "continuous"], a: 1 },
+            { q: "The students need to ___ their skills before the exam.", o: ["practice", "polish", "learn", "confirm"], a: 1 },
+            { q: "It was a ___ situation, but they managed well.", o: ["delicate", "fragile", "sensible", "dignified"], a: 0 },
+            { q: "Please ___ a ticket for the movie in advance.", o: ["reserve", "retain", "reclaim", "recover"], a: 0 },
+            { q: "The teacher gave us a ___ on the new chapter.", o: ["introduction", "overview", "insight", "summary"], a: 1 },
+            { q: "My friend and I have very similar ___.", o: ["traits", "personalities", "emotions", "behaviors"], a: 1 },
+            { q: "They ___ him of lying.", o: ["told", "accused", "insulted", "convicted"], a: 1 },
+            { q: "The doctor recommended him to ___ smoking.", o: ["quit", "stop", "abandon", "leave"], a: 0 },
+            { q: "The children were ___ by the clowns.", o: ["entertained", "occupied", "distracted", "motivated"], a: 0 },
+            { q: "The government is trying to ___ economic growth.", o: ["make", "enhance", "foster", "produce"], a: 2 },
+            { q: "Her presentation was very ___ and to the point.", o: ["expressive", "concise", "brief", "exact"], a: 1 },
+            { q: "He tends to ___ others for his own mistakes.", o: ["deny", "blame", "criticize", "accuse"], a: 1 },
+            { q: "The storm caused a lot of ___ in the area.", o: ["damage", "harm", "injury", "break"], a: 0 },
+            { q: "I don’t want to ___ your time.", o: ["lose", "waste", "pass", "throw"], a: 1 },
+            { q: "I would ___ the chance to study abroad.", o: ["appreciate", "take", "value", "enjoy"], a: 0 },
+            { q: "Her ___ to her family is admirable.", o: ["loyalty", "dedication", "commitment", "promise"], a: 1 },
+            { q: "The boss will ___ the report by tomorrow.", o: ["review", "renew", "repeat", "replay"], a: 0 },
+            { q: "They managed to ___ the fire before it spread.", o: ["prevent", "limit", "control", "hold"], a: 2 },
+            { q: "The new system should ___ productivity.", o: ["rise", "raise", "increase", "elevate"], a: 2 },
+            { q: "He has a ___ for solving complex problems.", o: ["talent", "skill", "gift", "ability"], a: 0 },
+            { q: "The house was completely ___ by the flood.", o: ["destroyed", "affected", "damaged", "endangered"], a: 0 },
+            { q: "She made a ___ that was hard to refuse.", o: ["propose", "proposal", "suggest", "suggestion"], a: 1 },
+            { q: "The news was ___ through a loudspeaker.", o: ["announced", "broadcasted", "declared", "displayed"], a: 0 },
+            { q: "What is the synonym of 'accomplish'?", o: ["Delay", "Achieve", "Stop", "Question"], a: 1 },
+            { q: "He gave an ___ to her question.", o: ["reply", "opinion", "answer", "feedback"], a: 2 },
+            { q: "We need a ___ approach to solve this.", o: ["systematic", "system", "method", "methodology"], a: 0 },
+            { q: "The task was very ___.", o: ["demanding", "requiring", "requesting", "ambitious"], a: 0 },
+            { q: "She’s ___ in several projects at the moment.", o: ["participated", "involved", "included", "engaged"], a: 1 },
+            { q: "I don’t ___ you are ready for this.", o: ["consider", "think", "assume", "agree"], a: 1 },
+            { q: "The word 'transparent' is closest in meaning to:", o: ["Clear", "Hidden", "Complicated", "Confusing"], a: 0 },
+            { q: "What does it mean to 'omit' something?", o: ["Include", "Forget", "Celebrate", "Leave out"], a: 3 },
+            { q: "They ___ the contract last week.", o: ["signed", "gave", "assigned", "arranged"], a: 0 },
+            { q: "This new rule is not ___.", o: ["productive", "effective", "efficient", "sufficient"], a: 1 },
+            { q: "The book has a ___ plot.", o: ["complicated", "complex", "delicate", "detailed"], a: 1 },
+            { q: "Which of these is the opposite of 'approve'?", o: ["Accept", "Confirm", "Support", "Reject"], a: 3 },
+            { q: "She’s very ___ when it comes to details.", o: ["careful", "precise", "accurate", "focused"], a: 1 },
+            { q: "The teacher had to ___ her methods.", o: ["adapt", "adopt", "change", "fix"], a: 0 },
+            { q: "He shows a lot of ___ towards his work.", o: ["effort", "enthusiasm", "motivation", "commitment"], a: 3 },
+            { q: "We need to ___ the process further.", o: ["develop", "improve", "progress", "advance"], a: 0 },
+            { q: "Which word means the opposite of 'genuine'?", o: ["True", "Fake", "Real", "Honest"], a: 1 },
+            { q: "I think that’s the girl ___ car was stolen.", o: ["who", "which", "whose", "whom"], a: 2 },
+            { q: "I’ll meet you ___ the corner of the street.", o: ["in", "at", "on", "under"], a: 1 },
+            { q: "They ___ be there already because I just saw them leaving.", o: ["must", "can’t", "should", "might"], a: 1 },
+            { q: "She was really tired; she ___ so hard yesterday.", o: ["mustn’t have worked", "shouldn’t have worked", "didn’t work", "can’t have worked"], a: 1 },
+            { q: "The teacher asked me ___ I had finished my homework.", o: ["that", "if", "what", "which"], a: 1 },
+            { q: "There was no point in ___ to persuade him.", o: ["trying", "tried", "try", "to try"], a: 0 },
+            { q: "I wish I ___ more time for my hobbies.", o: ["have", "had", "would have", "will have"], a: 1 },
+            { q: "Identify the correct sentence:", o: ["If only I would have studied harder!", "If only I studied harder!", "If only I had studied harder!", "If only I would study harder!"], a: 2 },
+            { q: "They don’t allow ___ in the museum.", o: ["smoking", "smoke", "to smoke", "smoked"], a: 0 },
+            { q: "Let’s wait ___ he arrives.", o: ["while", "until", "as", "when"], a: 1 },
+            { q: "She isn’t as tall ___ her brother.", o: ["than", "so", "as", "that"], a: 2 },
+            { q: "I couldn’t come because I ___ my aunt.", o: ["visited", "am visiting", "was visiting", "would visit"], a: 2 },
+            { q: "I’d prefer ___ at home tonight.", o: ["stay", "to stay", "staying", "stayed"], a: 1 },
+            { q: "He ___ to be a good doctor.", o: ["is said", "said", "says", "was said"], a: 0 },
+            { q: "They ___ in the park when it started to rain.", o: ["were walking", "walked", "are walking", "walk"], a: 0 },
+            { q: "He never remembers ___ the lights off.", o: ["turning", "turn", "to turn", "turned"], a: 2 },
+            { q: "She drives ___ her sister.", o: ["more carefully than", "more careful than", "as carefully", "more carefully"], a: 0 },
+            { q: "If I ___ you, I’d study harder.", o: ["am", "was", "were", "will be"], a: 2 },
+            { q: "___ I didn’t see him, I knew he was there.", o: ["Even though", "In spite", "Although", "Despite"], a: 2 },
+            { q: "I look forward ___ from you soon.", o: ["hearing", "to hear", "to hearing", "hear"], a: 2 },
+            { q: "She hasn’t ___ to the gym in weeks.", o: ["gone", "been", "go", "going"], a: 1 },
+            { q: "By this time next year, I ___ my studies.", o: ["will complete", "will have completed", "complete", "am completing"], a: 1 },
+            { q: "Hardly ___ the door when the phone rang.", o: ["had I shut", "I had shut", "I shut", "have I shut"], a: 0 },
+            { q: "You ___ speak during the exam.", o: ["must", "mustn’t", "don’t have to", "might"], a: 1 },
+            { q: "I ___ here since 2018.", o: ["lived", "have lived", "am living", "live"], a: 1 },
+            { q: "If he ___ on time, he wouldn’t have missed the train.", o: ["has arrived", "arrives", "had arrived", "will arrive"], a: 2 },
+            { q: "___ he was late, he didn’t miss the meeting.", o: ["Even though", "Despite", "Because", "As"], a: 0 },
+            { q: "I told him ___ talk so loudly.", o: ["not to", "to not", "not", "didn’t"], a: 0 },
+            { q: "She ___ to the beach every summer.", o: ["goes", "go", "went", "gone"], a: 0 },
+            { q: "This is the place ___ I met my friend.", o: ["which", "where", "that", "when"], a: 1 },
+            { q: "He wanted to know ___ they would arrive.", o: ["what", "when", "which", "who"], a: 1 },
+            { q: "I ___ there if I had known about the event.", o: ["will go", "went", "would have gone", "had gone"], a: 2 },
+            { q: "She found the book ___ she was looking for.", o: ["who", "which", "whom", "what"], a: 1 },
+            { q: "I ___ like to have a cup of tea, please.", o: ["would", "will", "am", "have"], a: 0 },
+            { q: "This is the most interesting book I’ve ever ___.", o: ["read", "readed", "reading", "reads"], a: 0 },
+            { q: "I’ll call you when I ___ back.", o: ["will get", "get", "got", "gets"], a: 1 },
+            { q: "She’s not ___ to come.", o: ["go", "going", "gone", "goes"], a: 1 },
+            { q: "I believe there ___ be a meeting tomorrow.", o: ["can", "must", "may", "will"], a: 3 },
+            { q: "She behaves ___ she were a queen.", o: ["like", "as if", "as", "even though"], a: 1 },
+            { q: "___ of them knows the answer.", o: ["Neither", "Noone", "Either", "All"], a: 0 },
+            { q: "I’m used ___ early in the morning.", o: ["to getting up", "getting up", "to get up", "get up"], a: 0 },
+            { q: "She ___ me finish the work before I left.", o: ["had", "made", "let", "helped"], a: 2 },
+            { q: "He ___ wear glasses to see better.", o: ["must", "can", "has to", "may"], a: 2 },
+            { q: "We’ve known each other ___ ten years.", o: ["since", "for", "from", "at"], a: 1 },
+            { q: "He said he ___ the report.", o: ["has finished", "have finished", "had finished", "finished"], a: 2 },
+            { q: "I didn’t enjoy the movie ___ it was too long.", o: ["because", "so", "although", "and"], a: 0 },
+            { q: "He finally managed ___ the car.", o: ["repair", "repairing", "to repair", "repairs"], a: 2 },
+            { q: "She’s not interested ___ sports.", o: ["in", "for", "with", "at"], a: 0 },
+            { q: "I ___ never heard such a funny story!", o: ["am", "have", "did", "was"], a: 1 },
+            { q: "They ___ here a year ago.", o: ["were moving", "have moved", "move", "moved"], a: 3 }
+        ],
+		 "Historija": [
+            { q: "Cjelokupna ljudska prošlost se dijeli na:", o: ["paleolit i neolit", "stara i nova era", "prethistorija i historija", "prošlost i sadašnjost"], a: 2 },
+            { q: "Prvi poznati stanovnici Bosne su:", o: ["slaveni", "iliri", "bogumili", "avari"], a: 1 },
+            { q: "Stari vijek nazivamo:", o: ["doba robovlasništva", "doba feudalizma", "doba kapitalizma", "prahistorijsko doba"], a: 0 },
+            { q: "Feudalizam je počeo:", o: ["propašću grčke kulture", "osnivanjem Rima", "padom Zapadnog rimskog carstva", "dolaskom Osmanlija"], a: 2 },
+            { q: "Feudalizam je trajao od:", o: ["pojave pisma do prvih civilizacija", "od V – X st.", "od X – XII st.", "od V – XV st."], a: 3 },
+            { q: "Bosna se prvi put u izvorima spominje:", o: ["u VII st.", "u VIII st.", "u IX st.", "u X st."], a: 3 },
+            { q: "Prvobitna srpska država se zvala:", o: ["Duklja", "Raška", "Zeta", "Karantanija"], a: 1 },
+            { q: "Povelja bana Kulina je izdata:", o: ["1151.", "1204.", "1377.", "1189."], a: 3 },
+            { q: "Vrhunac uspona srednjovjekovne Bosne je u vrijeme:", o: ["bana Kulina", "Stjepana I", "Stjepana II", "Tvrtka I"], a: 3 },
+            { q: "Centralna figura Franačke države je:", o: ["Odoakar", "Justinijan", "Pipin Mali", "Karlo Veliki"], a: 3 },
+            { q: "Papska država je nastala u:", o: ["IV st.", "V st.", "VII st.", "VIII st."], a: 3 },
+            { q: "Crkveni raskol se desio:", o: ["949.g.", "1189 g.", "1054.g.", "1204.g."], a: 2 },
+            { q: "Heliocentrični sistem je utemeljio:", o: ["Galileo Galilej", "Đordano Bruno", "Nikola Kopernik", "Nikolo Makijaveli"], a: 2 },
+            { q: "Novi vijek počinje:", o: ["padom Bizanta", "pojavom humanizma i renesanse", "otkrićem Amerike", "pojavom industrijske revolucije"], a: 2 },
+            { q: "Vladajuća dinastija u srednjovjekovnoj Bosni su:", o: ["Nemanjići", "Kotromanići", "Kosače", "Trpimirovići"], a: 1 },
+            { q: "Bosna je potpala pod Osmansku vlast:", o: ["1453.", "1459.", "1463.", "1580."], a: 2 },
+            { q: "Bosanski ejalet je osnovan:", o: ["1537.", "1580.", "1463.", "1683."], a: 1 },
+            { q: "Na čelu pokreta za autonomiju Bosne bio je:", o: ["muftija Džabić", "Mehmed Spaho", "Husein Kapetan Gradaščević", "Hadži Lojo"], a: 2 },
+            { q: "Parna mašina je otkrivena:", o: ["1733.", "1764.", "1769.", "1807."], a: 2 },
+            { q: "BiH je 1918. god. ušla u sastav:", o: ["kraljevine Srbije", "kraljevine SHS", "kraljevine Jugoslavije", "kneževine Srbije"], a: 1 },
+            { q: "Rat za nezavisnost Amerike je trajao od:", o: ["1683. - 1699.", "1775. - 1783.", "1815. - 1821.", "1861. - 1865."], a: 1 },
+            { q: "Pred I svj. rat najviše kolonija je imala:", o: ["Francuska", "Engleska", "Njemačka", "Rusija"], a: 1 },
+            { q: "Nezavisna država Hrvatska (NDH) je osnovana:", o: ["10.4.1941.", "13.4.1941.", "15.4. 1941.", "30.4.1941."], a: 0 },
+            { q: "Prvi ZAVNOBiH je održan u:", o: ["Mrkonjić Gradu", "Sanskom Mostu", "Bihaću", "Jajcu"], a: 0 },
+            { q: "Genocid u Srebrenici se dogodio:", o: ["11. juna 1995.", "11. jula 1995.", "11. augusta 1995.", "13. jula 1995."], a: 1 }
+        ],
+        "Geografija": [
+            { q: "Fizička geografija ne proučava:", o: ["reljef", "stanovništvo", "vode", "klimu"], a: 1 },
+            { q: "Astronomska jedinica je vrijednost srednje udaljenosti:", o: ["Mjeseca od Zemlje", "Zemlje od Sunca", "Mjeseca od Sunca", "Sunca od središta galaktike"], a: 1 },
+            { q: "Koja planeta sunčevog sistema je najudaljenija od Sunca?", o: ["Neptun", "Mars", "Uran", "Saturn"], a: 0 },
+            { q: "U kojem od navedenih mjeseci je Zemlja najbliža Suncu?", o: ["januar", "april", "maj", "juli"], a: 0 },
+            { q: "Toplotni pojasevi na Zemlji postoje zbog:", o: ["nagiba zemljine ose", "zemljine rotacije", "različitog upadnog ugla sunčevih zraka", "brzine kretanja po ekliptici"], a: 2 },
+            { q: "Koliko stepeni geografske dužine iznosi svaka satna zona na Zemlji?", o: ["60", "24", "30", "15"], a: 3 },
+            { q: "Granica između Zemljinoga plašta i kore je ploha:", o: ["Gutenbergov diskontinuitet", "Mohorovičićev diskontinuitet", "Krambergerov diskontinuitet", "Wegenerov diskontinuitet"], a: 1 },
+            { q: "Koji se pojam ne dovodi u vezu za egzogenim (vanjskim) procesima?", o: ["abrazija", "fluvijalna erozija", "vulkanizam", "korazija"], a: 2 },
+            { q: "Monsunska klima po Kepenovoj klasifikaciji spada u:", o: ["klime vječnog mraza", "umjereno tople kišne klime", "borealne", "tropske kišne klime"], a: 3 },
+            { q: "Tihi okean se nalazi između:", o: ["Evrope i Amerike", "Azije i Amerike", "Afrike i Australije", "Azije i Afrike"], a: 1 },
+            { q: "Tajga je naziv za:", o: ["tropsku kišnu šumu", "oblast visokih trava", "četinarsku šumu", "sredozemnu šumu"], a: 2 },
+            { q: "Broj živorođenih na hiljadu stanovnika nekog područja naziva se:", o: ["rodnost", "prirodni priraštaj", "demografska ekspanzija", "stopa nataliteta"], a: 3 },
+            { q: "Saobraćaj je djelatnost:", o: ["sekundarnog sektora", "tercijarnog sektora", "primarnog sektora", "kvartarnog sektora"], a: 1 },
+            { q: "Najistočnija tačka od Grinvičkog meridijana u BiH nalazi se u općini:", o: ["Bijeljina", "Zvornik", "Bratunac", "Srebrenica"], a: 2 },
+            { q: "Zaokruži krško polje u Bosni i Hercegovini:", o: ["Lijevče polje", "Glamočko polje", "Šamačko polje", "Ivanjsko polje"], a: 1 },
+            { q: "Najnižu količinu padavina u Bosni i Hercegovini ima:", o: ["Središnja Bosna", "Bosanska krajina", "Niska Hercegovina", "Semberija"], a: 3 },
+            { q: "Koja od navedenih rijeka ne nastaje u Bosni i Hercegovini?", o: ["Una", "Vrbas", "Ukrina", "Neretva"], a: 0 },
+            { q: "Najpoznatija kontinentalna močvara u Bosni i Hercegovini je:", o: ["Bardača", "Lonjsko polje", "Crna Mlaka", "Kopački rit"], a: 0 },
+            { q: "Prema popisu stanovništva iz 1991. godine, Bošnjaka je bilo:", o: ["50 %", "43%", "37%", "61%"], a: 1 },
+            { q: "Termolektrana u Bosni i Hercegovini se ne nalazi u:", o: ["Kaknju", "Gacku", "Bugojnu", "Ugljeviku"], a: 2 },
+            { q: "U Tuzlanskom kantonu ima:", o: ["10 općina", "13 općina", "9 općina", "11 općina"], a: 1 },
+            { q: "Koja od navedenih država ne pripada regiji zapadna Evropa?", o: ["Belgija", "Irska", "Danska", "Francuska"], a: 2 },
+            { q: "Koji od pojmova ne pripada jugozapadnoj Aziji?", o: ["Arabijski poluotok", "Iranska visoravan", "Mala Azija", "Malajski poluotok"], a: 3 },
+            { q: "Koja od navedenih država sjeverne Afrike je najveća po površini?", o: ["Egipat", "Alžir", "Tunis", "Libija"], a: 1 },
+            { q: "Koji dio ne čini osnovnu podjelu američkog kontinenta:", o: ["Sjeverna Amerika", "Srednja Amerika", "Zapadna Amerika", "Južna Amerika"], a: 2 }
+        ],
+		  "Filozofija": [
+            { q: "Šta proučava metafizika kao filozofska disciplina?", o: ["Izvore spoznaje", "Izvore i uzroke bića", "Izvore morala", "Izvore osjećaja"], a: 1 },
+            { q: "Koja od navedenih škola je prva škola u filozofiji?", o: ["Epikurejska škola", "Pitagorejska škola", "Prosvjetiteljska škola", "Miletska škola"], a: 3 },
+            { q: "Koja od navedenih nije filozofska disciplina?", o: ["Ontologija", "Etika", "Estetika", "Oftalmologija"], a: 3 },
+            { q: "Šta je estetika?", o: ["Nauka o Bogu", "Nauka o postanku svijeta", "Nauka o osjećajima", "Nauka o uništenju svijeta"], a: 2 },
+            { q: "Koja skupina filozofa pripada Kozmološkom razdoblju grčke filozofije?", o: ["Platon, Aristotel, Teofrast", "Tales, Anaksimen, Anaksimander", "Hobs, Lok, Hjum", "Kant, Fihte, Šeling"], a: 1 },
+            { q: "Prema Talesovoj teoriji, koja je to materija od koje je sve nastalo?", o: ["Vatra", "Voda", "Vazduh", "Zemlja"], a: 1 },
+            { q: "Kojem filozofu se može pripisati citat o razboritom čovjeku i upravljanju državom?", o: ["Hesiodu", "Hermodoru", "Heraklitu", "Platonu"], a: 2 },
+            { q: "Odredite ime filozofa kojem pripada citat: «Čovjek je mjerilo svih stvari...»?", o: ["Pitagora", "Protagora", "Platon", "Parmenid"], a: 1 },
+            { q: "Šta je gnoseologija?", o: ["Spoznajna teorija koja se bavi porijeklom izvjesnosti i dosega spoznaje", "Nauka o bitku i ontološkim kategorijama", "Nauka o počelima i ontološkom utemeljenju svijeta", "Nauka o znakovima"], a: 0 },
+            { q: "Koju je filozofsku disciplinu utemeljio Sokrat?", o: ["Estetiku", "Logiku", "Etiku", "Političku filozofiju"], a: 2 },
+            { q: "Koju je od navedenih knjiga napisao Augustin Aurelije?", o: ["Društveni ugovor", "O božijoj državi", "Srednjovjekovna filozofija", "O prirodi"], a: 1 },
+            { q: "Kojem filozofu se pripisuje načelo «Bitak jest-nebitak nije»?", o: ["Đordanu Brunu", "Parmenidu", "Tomasu Kampaneli", "Heraklitu"], a: 1 },
+            { q: "Spoznajno-teorijski pravac u kojem je iskustvo uvjet svake spoznaje je:", o: ["Racionalistička filozofija", "Empiristička filozofija", "Spiritualistička filozofija", "Islamska filozofija"], a: 1 },
+            { q: "Kojem filozofu se pripisuje tvorba metodičke sumnje (jasno i razgovijetno)?", o: ["Lajbnicu", "Dekartu", "Hobsu", "Spinozi"], a: 1 },
+            { q: "Koji idol (zabluda) po Bekonovoj teoriji ne pripada ovom nizu?", o: ["Idoli plemena", "Idoli spilje", "Idoli zavjere", "Idoli smutnje"], a: 2 },
+            { q: "Šta je Patristika?", o: ["Sistem izgradnje kršćanskog kreda (I do VIII stoljeća)", "Teorija o Bogu kao prvom pokretaču", "Teorija o upravljanju svijetom", "Teorija o Bogu koji ne stvara"], a: 0 },
+            { q: "U čemu se sastoji Kantov kriticizam?", o: ["U kritici dogmatskog racionalizma i skeptičnog empirizma", "U kritici relativizma", "U kritici samog racionalizma", "U kritici religije"], a: 0 },
+            { q: "Kako glasi Kantov kategorički imperativ?", o: ["Djeluj kao drugi", "Djeluj tako da maksima tvoje volje može važiti kao princip općeg zakonodavstva", "Djeluj prema potrebi", "Djeluj onako kako želiš"], a: 1 },
+            { q: "Teza o prevrednovanju svih vrijednosti i nadčovjeku pripisuje se:", o: ["Šopenhaueru", "Ničeu", "Aristotelu", "Kantu"], a: 1 },
+            { q: "Što je Hegel odgovorio na to da se njegov sistem ne podudara sa činjenicama?", o: ["Činjenice nisu bitne", "Utoliko gore po činjenice", "Nema činjenica", "Promjena sistema"], a: 1 },
+            { q: "Kada Hegel govori o trijadi (teza, antiteza, sinteza), on misli na:", o: ["Metodiku", "Retoriku", "Dijalektiku", "Kreaciju"], a: 2 },
+            { q: "Šta materijalizam naučava?", o: ["Bitak je materijalan, materija primarna, a duh sekundaran", "Idealizam je primaran", "Iskustvo je jedini izvor", "Razum je izvor znanja"], a: 0 },
+            { q: "Šta je racionalizam?", o: ["Ispitivanje porijekla motiva", "Spoznajno gledište da do spoznaja dolazimo umovanjem i čistim mišljenjem", "Čuđenje i divljenje", "Odbacivanje razuma"], a: 1 },
+            { q: "Ko je napisao djelo “Pitanje krivnje”?", o: ["Karl Jaspers", "Martin Hajdeger", "Soren Kjerkegard", "Fridrih Niče"], a: 0 },
+            { q: "Koja su četiri uzroka bića po Aristotelu?", o: ["Tijelo, duša, volja, razum", "Tvar, oblik, uzrok kretanja i svrha", "Osjećaji, razum, čula, volja", "Tvar, oblik, razum, čula"], a: 1 }
+        ],
+        "Psihologija": [
+            { q: "Početak znanstvene psihologije veže se za:", o: ["Skinnera", "Freuda", "Wundta", "Pavlova"], a: 2 },
+            { q: "Mišljenje, pamćenje i učenje su procesi:", o: ["afektivni", "konativni", "kognitivni", "koherentni"], a: 2 },
+            { q: "Kod anketnog ispitivanja važno je da uzorak bude sastavljen od:", o: ["istog broja M i Ž", "ispitanika koji dobro reprezentiraju populaciju", "sličnih ispitanika", "dobrovoljaca"], a: 1 },
+            { q: "Koja žlijezda pojačava rad pri jakome strahu?", o: ["nadbubrežna", "spolna", "gušterača", "hipofiza"], a: 0 },
+            { q: "Primjer učenja klasičnim uslovljavanjem je:", o: ["oponašanje trenera", "pas trči na zvuk vrećice hrane", "pritisak poluge za hranu", "učenje za pohvalu"], a: 1 },
+            { q: "Koju karakteristiku potvrđuje isti rezultat testa nakon 6 mjeseci?", o: ["objektivnost", "valjanost", "osjetljivost", "pouzdanost"], a: 3 },
+            { q: "Pri odgovaranju na pitanja, tok informacija iz pamćenja je:", o: ["iz dugoročnog u kratkoročno", "iz dugoročnog u senzorno", "iz kratkoročnog u dugoročno", "iz senzornog u dugoročno"], a: 0 },
+            { q: "Koja vanjska prepreka izaziva frustraciju?", o: ["sukob motiva", "nedostatak znanja", "nedostatak talenta", "norme i običaji zajednice"], a: 3 },
+            { q: "Šta ne ubrajamo u strukturu ličnosti?", o: ["temperament", "motivacija", "karakter", "sposobnost"], a: 1 },
+            { q: "Optuživanje drugih za vlastitu lijenost je primjer:", o: ["racionalizacije", "regresije", "identifikacije", "projekcije"], a: 3 },
+            { q: "Koji refleks kod novorođenčeta izaziva prislonjen prst na obraz?", o: ["hvatanja", "sisanja", "smijanja", "kihanja"], a: 1 },
+            { q: "Proces preobrazbe jedinke u kompetentnog člana zajednice je:", o: ["integracija", "asimilacija", "akomodacija", "socijalizacija"], a: 3 },
+            { q: "Socijalni psiholog je prvenstveno zainteresovan za:", o: ["razlike u motivaciji", "psihičke poremećaje", "probleme učenja", "nasilničko ponašanje pojedinca u skupini"], a: 3 },
+            { q: "Koja od navedenih NIJE teorijska psihološka disciplina?", o: ["razvojna", "pedagoška", "psihometrija", "psihopatologija"], a: 1 },
+            { q: "Šta NE ubrajamo u odliku zrele religioznosti?", o: ["preispitivanje prakse", "njegovanje slobode", "motrenje iskustva u vjeri", "individualizam bez odgovornosti"], a: 3 },
+            { q: "Šta od navedenog nije primarna (osnovna) emocija?", o: ["mržnja", "radost", "tuga", "strah"], a: 0 },
+            { q: "Sistemski pokušaj oblikovanja percepcije i manipuliranja ponašanjem je:", o: ["reklama", "propaganda", "javno mnijenje", "marketing"], a: 1 },
+            { q: "Pospanost, umor i poremećaj pažnje ukazuju na:", o: ["apneu", "narkolepsiju", "insomniu", "somnambulizam"], a: 2 },
+            { q: "Inteligencija stečena kroz znanja i vještine tokom života je:", o: ["oligofrena", "dementna", "fluidna", "kristalizirana"], a: 3 },
+            { q: "Temperament s jakim osjećanjima i naglim reakcijama je:", o: ["kolerični", "flegmatični", "melanholični", "sangvinični"], a: 0 },
+            { q: "Faktori bitni za predmet izučavanja psihologije su:", o: ["fizička okolina, socijalna okolina, aktivnost pojedinca", "šta, kako, zašto", "materijalno i nematerijalno"], a: 0 },
+            { q: "Metoda naučnog opažanja mora imati:", o: ["metrijske karakteristike", "definiran cilj, predmet i plan opažanja", "faze podražaja i doživljaja"], a: 1 },
+            { q: "Socijalna psihologija izučava:", o: ["ponašanje pojedinca u društvenom okruženju", "eksperimente na životinjama", "matematičke postupke"], a: 0 },
+            { q: "Riječ psihologija nastala je od riječi:", o: ["Psyho (duša) i Logos (nauka)", "Human (čovjek) i Logos (nauka)"], a: 0 },
+            { q: "Razvojna psihologija bavi se:", o: ["psihičkim funkcioniranjem", "mjerenjima", "proučavanjem zakonitosti psihičkog razvoja od rođenja do smrti"], a: 2 },
+            { q: "U metode neeksperimentalnih istraživanja ubrajamo:", o: ["introspekciju", "sistematsko posmatranje ili opažanje", "eksperiment"], a: 1 },
+            { q: "Psihometrija se bavi:", o: ["psihičkim funkcioniranjem", "mjerenjima, analizama, matematičkim i statističkim postupcima", "razvojem čovjeka"], a: 1 },
+            { q: "Maslowljeva hijerarhija obuhvata:", o: ["fiziološke, sigurnost, pripadanje, samopoštovanje, samoaktualizaciju", "moć, autonomiju i uspjeh"], a: 0 },
+            { q: "Koji faktori najviše utječu na učenje?", o: ["doba dana", "motivacija i interes", "broj prijatelja", "kondicija"], a: 1 },
+            { q: "Ključni korak za proces pamćenja je:", o: ["zaboravljanje", "usvajanje informacija", "distrakcija", "oslobađanje od stresa"], a: 1 },
+            { q: "Šta je zaboravljanje?", o: ["sposobnost prisjećanja svega", "gubitak sposobnosti novog pamćenja", "nemogućnost prisjećanja ranije usvojenog", "tehnički proces"], a: 2 },
+            { q: "Šta može poboljšati pamćenje?", o: ["nedostatak sna", "hidracija i pravilna ishrana", "preopterećenje", "distrakcija"], a: 1 },
+            { q: "Kratkoročno i dugoročno pamćenje veže se za fazu:", o: ["kodiranja", "pohrane", "prisjećanja"], a: 1 },
+            { q: "Šta podrazumijeva mentalna higijena?", o: ["tjelesnu higijenu", "prakse usmjerene na očuvanje mentalnog zdravlja", "prisjećanje stresa", "fizičku snagu"], a: 1 }
+        ],
+		"Logika": [
+            { q: "Šta je Logika?", o: ["Ljubav prema mudrosti", "Filozofska disciplina koja se bavi proučavanjem oblika valjane misli i metoda spoznaje", "Nauka o razmišljanju", "Sociološka disciplina"], a: 1 },
+            { q: "Ko je osnivač Logike?", o: ["Aristotel", "Platon", "Francis Bacon", "Imanuel Kant"], a: 0 },
+            { q: "Šta je kopula?", o: ["Vrsta suda", "Vrsta pojma", "Veza među pojmovima u sudu", "Vrsta zaključka"], a: 2 },
+            { q: "Šta je doseg pojma?", o: ["Skup pojedinačnih predmeta koji spadaju pod neki pojam", "Psihička kategorija", "Element suda", "Psihički odraz svojstava realnih stvari"], a: 0 },
+            { q: "Koji zaključak je neposredan?", o: ["Zaključak koji se izvodi iz najmanje dva suda", "Zaključak koji se izvodi iz samo jednog suda", "Zaključak koji se izvodi iz neistinitih premisa", "Zaključak koji se izvodi iz tri suda"], a: 1 },
+            { q: "Prema tradicionalnoj četverostrukoj podjeli sudova postoje…", o: ["Sudovi po kvantitetu, kvalitetu, relaciji i modalitetu", "Sudovi po kvantitetu, kvalitetu, polaritetu i frekventnosti", "Sudovi po kvantitetu, kvalitetu, relativnosti i optimalnosti", "Sudovi po kvantitetu, kvalitetu, relaciji i opozitetu"], a: 0 },
+            { q: "Kakav je to disparatni odnos među pojmovima?", o: ["Slični pojmovi po opsegu", "Nespojivi pojmovi ni po sadržaju ni po opsegu", "Pojmovi čiji se sadržaj i opseg međusobno preklapaju", "Pojmovi koji se međusobno isključuju"], a: 1 },
+            { q: "Šta su “sofizmi”?", o: ["Namjerno učinjene logičke pogreške", "Nenamjerno učinjene logičke pogreške", "Gramatičke pogreške", "Stilske greške"], a: 0 },
+            { q: "Šta je kontrarni odnos među sudovima?", o: ["Odnos dva suda od kojih je jedan univerazlno afirmativan a drugi univerzalno negativan sa istim subjektom i predikatom", "Odnos između istinitog i neistinitog suda", "Odnos između univerzalnog i afirmativnog suda", "Odnos između dva suda od kojih je jedan pozitivan drugi negativan"], a: 0 },
+            { q: "Kakvi su to limitativni (beskrajni) sudovi?", o: ["Sudovi sa negativnom kopulom i afirmativnim predikatom", "Sudovi sa afirmativnom kopulom i afirmativnim predikatom", "Sudovi sa afirmativnom kopulom i negativnim predikatom", "Sudovi sa negativnom kopulom i negativnim predikatom"], a: 2 },
+            { q: "Kakvi su to ekvipolentni pojmovi?", o: ["Pojmovi kod kojih je različit sadržaj a isti opseg (obim)", "Pojmovi kod kojih je različit opseg (obim) a isti sadržaj", "Pojmovi kod kojih je različit i opseg i sadržaj", "Pojmovi kod kojih je različitih sadržaj a isti doseg"], a: 0 },
+            { q: "Sud “Tabla je ispred učenika” je primjer…?", o: ["Egzistencijalnog suda", "Relacionog suda", "Univerzalnog suda", "Apodiktičkog suda"], a: 1 },
+            { q: "Koji su to kontradiktorni sudovi?", o: ["To su sudovi sa istim subjektom i predikatom koji se razlikuju po kvantitetu", "To su sudovi sa istim subjektom i predikatom koji se razlikuju po kvantitetu i kvalitetu", "To su sudovi sa istim subjektom i predikatom koji se razlikuju po kvalitetu", "To su sudovi sa različitim subjektom i predikatom koji se razlikuju i po kvantitetu i po kvalitetu"], a: 1 },
+            { q: "Šta je dedukcija?", o: ["Zaključivanje od općeg ka pojedinačnom", "Zaključivanje od pojedinačnog ka općem", "Zaključivanje od općeg ka još općenitijem", "Zaključivanje od općeg ka još općenitijem"], a: 0 },
+            { q: "Šta je indukcija?", o: ["Zaključivanje od pojedinačnog ka općem", "Zaključivanje od pojedinačnog ka singularnom", "Zaključivanje od općeg ka pojedinačnom", "Zaključivanje od pojedinačnog ka specijalnom"], a: 0 },
+            { q: "Šta je dokaz kao logička tvorevina?", o: ["Logička forma postupka čija je svrha da pokaže istinitost nekog suda", "Postupak izvođenja suda", "Proces formiranja misli", "Istinit i pravilan sud"], a: 0 },
+            { q: "Šta su apodiktički sudovi?", o: ["To su sudovi kojima se izražava istina o nekom događaju", "To su sudovi kojima se izražava nužnost, da nešto mora tako biti", "To su sudovi kojima se ističe da nešto može a i ne mora biti", "To su sudovi koji se izvode iz prethodnih premisa"], a: 1 },
+            { q: "Šta je sud?", o: ["Stav kojim se nešto tvrdi ili poriče", "Prosta ili proširena rečenica", "Stav kojim se nešto tvrdi", "Stav kojim se nešto poriče"], a: 0 },
+            { q: "Koji je naslov Aristotelovih logičkih spisa?", o: ["Fizika", "Organon", "Nikomahova etika", "Retorika"], a: 1 },
+            { q: "Šta su paralogizmi?", o: ["Namjerno učinjene logičke pogreške", "Nenamjerno učinjene logičke pogreške", "Stilske greške", "Izgovorne greške"], a: 1 }
+        ],
+        "Sociologija": [
+            { q: "Šta od navedenog nije predmet proučavanja Sociologije?", o: ["Ljudsko društvo", "Porodica", "Kretanje tijela", "Nacija"], a: 2 },
+            { q: "Koja je osnovna ideja u Platonovoj kocepciji „idealne države“?", o: ["Ideja jednakosti", "Ideja polisa", "Ideja pravde", "Ideja demokratije"], a: 2 },
+            { q: "Šta je sociološka teorija?", o: ["Skup ideja koji omogućuju sistematizaciju znanja o društvu, njegovo objašnjenje i predviđanje njegove budućnosti", "Pogledi sociologa na društvo i njegove promjene", "Skup socioloških stavova", "Skup socioloških zakona"], a: 0 },
+            { q: "Kako se dijele društvene pojave?", o: ["Na pojedinačne pojave i grupne pojave", "Na materijalne pojave i nematerijalne pojave", "Pojave kratkog trajanja i pojave dugog trajanja", "Na društvene procese i društvene tvorevine"], a: 3 },
+            { q: "Koje vrste solidarnosti razlikuje Emil Dirkem i koje su njihove karakteristike?", o: ["Rana i kasna solidarnost", "Privremena i dugotrajna solidarnost", "Fizička i psihička solidarnost", "Mehanička i organska solidarnost"], a: 3 },
+            { q: "Kako Aristotel određuje čovjeka?", o: ["Vrhovnu ideju", "Kao vrhovnog kriterija svega", "“zoon politikon” (društveno-političko biće)", "Kao najuzvišenije biće"], a: 2 },
+            { q: "Šta je “makijavelizam”?", o: ["Moderna filozofija", "Djelo (knjiga) Nikole Makijavelija", "Srednjovjekovna crkvena filozofija", "Političko učenje Nikole Makijavelija koje se ogleda u stavu “Cilj opravdava sredstva”"], a: 3 },
+            { q: "Šta je “birokratija” po Maksu Veberu?", o: ["Idealni tip države", "Vrsta vlasti", "Sistem zadovoljavanja društvenih potreba kroz pravila", "Vrsta Sociologije"], a: 2 },
+            { q: "Šta je društvena pojava?", o: ["Djelovanje društvenih subjekata", "Svjesno djelovanje ljudi ili društvenih grupa koje rezultira novim društvenim sadržajem (materijalne ili duhovne naravi)", "Rezultat društvenih procesa", "Proces usvajanja znanja, normi, vrijednosti iz društva"], a: 1 },
+            { q: "Šta je “utopija”?", o: ["Posebna društvena klasa", "Imaginarna, nepostojeća država", "Vrsta društvenih pojava", "Vrsta porodice"], a: 1 },
+            { q: "Navedi 3 vrste metoda u sociološkim istraživanjima?", o: ["Osnovne, pomoćne i terenske", "Osnovne, primarne i sekundarne", "Osnovne, izvedene i posebne", "Osnovne, pomoćne i posebne"], a: 3 },
+            { q: "Šta je društvenost?", o: ["Svojstvo, sposobnost uspostavljanja društvenih veza, odnosa i interakcija među društvenih subjektima", "Učešće u društvenih procesima", "Povezivanje društvenih subjekata", "Učešće u političkim procesima"], a: 0 },
+            { q: "Šta je po Karlu Marsku društvena baza a šta društvena nadgradnja?", o: ["Društvena baza je ekonomija, društvena nadgradnja sve ostalo (država, moral…)", "Društvena baza je država, društvena nadgradnja narod", "Društvena baza je proletarijat, društvena nadgradnja su kapitalisti", "Društvena baza je trenutno postojeće stanje, a nadgradnja je komunizam"], a: 0 },
+            { q: "Ko se od navedenih ne smatra osnivačem sociologije?", o: ["Ogist Kont", "Herbert Spenser", "Sen Simon", "Entoni Gidens"], a: 3 },
+            { q: "Predstavnik antičke političke i socijalne misli je:", o: ["Max Veber", "Sen Simon", "Platon", "Ogist Kont"], a: 2 },
+            { q: "Društvena pokretljivost je:", o: ["Kretanje društva kroz vrijeme", "Mijenjanje bračnog partnera", "Mijenjanje socioekonomskog položaja pojedinca ili socijalnih grupa", "Fizičko kretanje ljudi"], a: 2 },
+            { q: "Političke stranke su:", o: ["Grupe ljudi koje govore zajedničkim jezikom", "Društvene grupe koje nastoje osvojiti vlast putem izbora", "Grupe ljudi koje žive na istom kontinentu", "Grupe ljudi koji žive u istim vremenskim zonama"], a: 1 },
+            { q: "Sekularizacija je:", o: ["Preovladavanje svjetovnog nad duhovnim, smanjivanje uticaja crkve i religije", "Javno propovjedanje religije", "Oblik morala", "Vrste religijske sekte"], a: 0 },
+            { q: "Šta je proletarijat po marksizmu?", o: ["Revolucija", "Posjednička klasa", "Radnička klasa", "Društveno stanje"], a: 2 },
+            { q: "Kako se naziva glavno djelo Hasan Kafi Pruščaka?", o: ["Industrijski sistem", "Temelji mudrosti o uređenju svijeta", "Struktura znanstvenih revolucija", "Kurs pozitivne filozofije"], a: 1 },
+            { q: "Šta je socijalizacija?", o: ["Uspostavljanje kontakata", "Sociološka teorija", "Proces usvajanja normi, vrijednosti i stavova za funkcionisanje u društvu", "Vrsta institucija"], a: 2 },
+            { q: "Šta proučava, po Ogistu Kontu, socijalna statika a šta socijalna dinamika?", o: ["Statika društvene procese, dinamika tvorevine", "Statika narode, dinamika države", "Socijalna statika proučava društvenu strukturu a društvena dinamika procese razvoja društva", "Dinamika strukturu, statika odnos sociologije i fizike"], a: 2 },
+            { q: "Djelo Maksa Vebera nosi naslov?", o: ["Protestanska etika i duh kapitalizma", "Birokratija", "Kapital", "Evolucija vrsta"], a: 0 },
+            { q: "U vrste političkih izbora ne spadaju:", o: ["opći", "lokalni", "vanredni", "mehanički"], a: 3 },
+            { q: "Šta podrazumijeva globalizacija?", o: ["Ostvarenje jednakosti", "Zatvaranje društvenih grupa", "Slobodan protok ljudi, roba i informacija", "Prelazak iz jednog sistema u drugi"], a: 2 }
+        ],
+		  "Matematika": [
+            { q: "Napisati decimalni broj 0,413413413... u obliku razlomka:", o: ["413/99", "413/100", "413/1000", "413/999"], a: 3 },
+            { q: "Izvršiti naznačene operacije: (b<sup>5m</sup>)<sup>7</sup> &sdot; (b<sup>5</sup>)<sup>3m</sup>", o: ["b<sup>50m</sup>", "b<sup>20m</sup>", "b<sup>30m</sup>", "b<sup>40m</sup>"], a: 0 },
+            { q: "Odrediti razliku P(x) - Q(x), ako je P(x) = -3x<sup>3</sup> + 4x<sup>2</sup> + 5x + 7 i Q(x) = x<sup>4</sup> - x<sup>3</sup> + 2x<sup>2</sup> + 1", o: ["-x<sup>4</sup> - 2x<sup>3</sup> + 2x<sup>2</sup> + 5x + 6", "-x<sup>4</sup> - 4x<sup>3</sup> + 6x<sup>2</sup> + 5x + 8", "x<sup>4</sup> + 2x<sup>3</sup> - 2x<sup>2</sup> - 5x - 6", "x<sup>4</sup> - 4x<sup>3</sup> - 2x<sup>2</sup> + 5x + 6"], a: 0 },
+            { q: "Koristeći Bezuovu teoremu, odrediti ostatak pri dijeljenju polinoma (-3x<sup>5</sup> - 2x<sup>4</sup> + x<sup>3</sup> - x<sup>2</sup> + 1) : (x - 2)", o: ["-230", "123", "-123", "230"], a: 2 },
+            { q: "Koristeći formulu kvadrat zbira, izraz (2x + 5y)<sup>2</sup> jednak je:", o: ["4x<sup>2</sup> + 25y<sup>2</sup>", "4x<sup>2</sup> + 20xy + 25y<sup>2</sup>", "2x<sup>2</sup> + 5y<sup>2</sup>", "2x<sup>2</sup> + 20xy + 5y<sup>2</sup>"], a: 1 },
+            { q: "Koristeći pravilo kub binoma, rastaviti na faktore: 1 + 15x + 75x<sup>2</sup> + 125x<sup>3</sup>", o: ["(1 + 5x)<sup>3</sup>", "(1 - 5x)<sup>3</sup>", "(1 + 125x)<sup>3</sup>", "(1 - 125x)<sup>3</sup>"], a: 0 },
+            { q: "Rastaviti kvadratni trinom x<sup>2</sup> + 2x - 8 na faktore:", o: ["(x - 2)(x - 4)", "(x - 2)(x + 4)", "(x + 2)(x + 4)", "(x + 2)(x - 4)"], a: 1 },
+            { q: "Skratiti razlomak (a<sup>4</sup> - a) / (3a<sup>2</sup> + 3a + 3):", o: ["a(a-1) / 3", "a(a-1) / (a<sup>2</sup>+a+1)", "a / 3", "a(a+1) / 3"], a: 0 },
+            { q: "Pomnožiti razlomke: ((a-3)/(4a+4)) &sdot; (16a/(9 - a<sup>2</sup>))", o: ["4 / (a-3)", "-4 / ((a+1)(3-a))", "-4a / ((a+1)(a+3))", "4a / ((a+1)(a+3))"], a: 2 },
+            { q: "Ugao 2&pi;/5 u stepenima iznosi:", o: ["60&deg;", "66&deg;", "70&deg;", "72&deg;"], a: 3 },
+            { q: "U kakvom odnosu su unutrašnji i vanjski ugao mnogougla u istom vrhu?", o: ["Jednaki", "Komplementni (90&deg;)", "Suplementni (180&deg;)", "Njihov zbir je 360&deg;"], a: 2 },
+            { q: "Koji mnogougao ima broj dijagonala jednak broju stranica?", o: ["Osmougao", "Sedmougao", "Šestougao", "Petougao"], a: 3 },
+            { q: "Stranica pravougaonika je a = 11cm, obim O = 30cm. Kolika je površina?", o: ["209 cm<sup>2</sup>", "44 cm<sup>2</sup>", "330 cm<sup>2</sup>", "165 cm<sup>2</sup>"], a: 1 },
+            { q: "Dijagonale romba su d<sub>1</sub> = 10 i d<sub>2</sub> = 8. Kolika je površina?", o: ["20", "160", "80", "40"], a: 3 },
+            { q: "Hipotenuza je c = 15 cm, kateta b = 12 cm. Kolika je površina trougla?", o: ["180 cm<sup>2</sup>", "54 cm<sup>2</sup>", "90 cm<sup>2</sup>", "108 cm<sup>2</sup>"], a: 1 },
+            { q: "Riješiti nejednačinu 11 - (2x + 3) > 5 - x:", o: ["x < 3", "x > 3", "x < 9", "x > 9"], a: 0 },
+            { q: "Izračunati vrijednost izraza i<sup>321</sup>:", o: ["1", "-1", "i", "-i"], a: 2 },
+            { q: "Odrediti realni i imaginarni dio broja z = 22 - 5i:", o: ["Re=22, Im=-5i", "Re=22, Im=5", "Re=22, Im=-5", "Re=22, Im=5i"], a: 2 },
+            { q: "Odrediti modul kompleksnog broja z = 10 - 10i:", o: ["10&radic;2", "20", "0", "200"], a: 0 },
+            { q: "Rješenje koje kvadratne jednačine je x = 2?", o: ["5x<sup>2</sup> - 2x - 18 = 0", "5x<sup>2</sup> + 11x - 7 = 0", "x<sup>2</sup> + x - 6 = 0", "x<sup>2</sup> - 4x - 5 = 0"], a: 2 },
+            { q: "Riješiti potpunu kvadratnu jednačinu x<sup>2</sup> - x - 12 = 0:", o: ["x<sub>1</sub>=3, x<sub>2</sub>=-4", "x<sub>1</sub>=-3, x<sub>2</sub>=4", "x<sub>1</sub>=3, x<sub>2</sub>=4", "x<sub>1</sub>=-3, x<sub>2</sub>=-4"], a: 1 },
+            { q: "Za koje vrijednosti parametra m jednačina 4x<sup>2</sup> + x + 2m = 0 ima realna rješenja?", o: ["m &le; 1/32", "m < 32", "m > 1/32", "m > 32"], a: 0 },
+            { q: "Odrediti zbir i proizvod rješenja jednačine x<sup>2</sup> - 55x + 76 = 0:", o: ["zbir=-55, pr=-76", "zbir=55, pr=-76", "zbir=-55, pr=76", "zbir=55, pr=76"], a: 3 },
+            { q: "Odrediti koordinate tjemena parabole y = x<sup>2</sup> - 4x + 3:", o: ["T(2, 1)", "T(2, -1)", "T(-2, -1)", "T(-2, 1)"], a: 1 },
+            { q: "Odrediti interval u kojem funkcija y = -x<sup>2</sup> + 2x + 35 raste:", o: ["(-&infin;, 1)", "(1, &infin;)", "(-&infin;, -1)", "(-1, &infin;)"], a: 0 },
+            { q: "Riješiti kvadratnu nejednačinu -2x<sup>2</sup> - 8x > 0:", o: ["x &isin; (0, 4)", "x > -4", "x &isin; (-4, 0)", "x < 0"], a: 2 },
+            { q: "Riješiti bikvadratnu jednačinu x<sup>4</sup> - 3x<sup>2</sup> - 4 = 0:", o: ["x=&plusmn;i, x=&plusmn;3", "x=&plusmn;2i, x=&plusmn;1", "x=&plusmn;5, x=1&plusmn;3i", "x=&plusmn;i, x=&plusmn;2"], a: 3 },
+            { q: "Rješenja kubne jednačine x<sup>3</sup> - 6x<sup>2</sup> + 13x - 10 = 0 su:", o: ["x=1, x=1&plusmn;2i", "x=-5, x=-3&plusmn;i", "x=2, x=2&plusmn;i", "x=-2, x=3&plusmn;5i"], a: 2 },
+            { q: "Riješi sistem jednačina 2y - x = 2 i 2xy = 3:", o: ["(-3, -0.5) i (1, 1.5)", "(-3, 2) i (1, -6)", "(6, 2) i (-10, -6)", "(-2, -6) i (6, 10)"], a: 0 },
+            { q: "Pronađi rješenja sistema x<sup>2</sup> + y<sup>2</sup> = 8 i xy = 4:", o: ["(-2, 2), (2, -2)", "(-2, -2), (2, 2)", "(2, -2), (-2, 2)", "(2, 2), (-1, 1)"], a: 1 },
+            { q: "U skupu realnih brojeva riješiti &radic;(1 + 3x) = x + 1:", o: ["x=1, x=0", "x=1, x=1/3", "x=0, x=1", "x=-1/3, x=0"], a: 0 },
+            { q: "Rješenje eksponencijalne jednačine 2 &sdot; 8<sup>x+1</sup> = 16 je:", o: ["x=2", "x=1", "x=0", "x=-1"], a: 2 },
+            { q: "Riješiti jednačinu 7<sup>x</sup> + 7<sup>x+1</sup> = 2<sup>x+4</sup> + 2<sup>x+3</sup> + 2<sup>x+2</sup>:", o: ["x=0", "x=1", "x=2", "x=3"], a: 2 },
+            { q: "Izračunati log<sub>5</sub>(1/25):", o: ["-1/2", "1/2", "2", "-2"], a: 3 },
+            { q: "Izračunati x ako je log<sub>4</sub>(x) = 1/2:", o: ["1/16", "2", "16", "1/2"], a: 1 },
+            { q: "Odrediti x ako je log(x) = log(12) + log(4) - log(2):", o: ["x=24", "x=48", "x=14", "x=8"], a: 0 },
+            { q: "Sinus oštrog ugla u pravouglom trouglu je:", o: ["naspramna/nalegla", "nalegla/hipotenuza", "naspramna/hipotenuza", "nalegla/naspramna"], a: 2 },
+            { q: "U 2. kvadrantu važi:", o: ["sin (+), cos (-)", "sin (-), cos (+)", "sin (+), cos (+)", "sin (-), cos (-)"], a: 0 },
+            { q: "Koliko iznosi sin 210&deg;?", o: ["0", "-1/2", "-&radic;3/2", "1/2"], a: 1 },
+            { q: "Koliko iznosi cos 1500&deg;?", o: ["0", "-1/2", "-&radic;3/2", "1/2"], a: 3 },
+            { q: "Zaokruži tačan obrazac:", o: ["sin &alpha; = &plusmn;&radic;(1 + cos<sup>2</sup>&alpha;)", "sin &alpha; = &plusmn; tg&alpha; / &radic;(tg<sup>2</sup>&alpha; + 1)", "sin &alpha; = &plusmn; 1 / &radic;(tg<sup>2</sup>&alpha; + 1)", "sin &alpha; = &plusmn; tg&alpha; / &radic;(tg<sup>2</sup>&alpha; - 1)"], a: 1 },
+            { q: "Vrijednost izraza cos43&deg;cos13&deg; + sin43&deg;sin13&deg; je:", o: ["-1", "1/2", "&radic;3/2", "0"], a: 1 },
+            { q: "Funkcija tangens je:", o: ["parna", "neparna", "ni parna ni neparna", "poluparna"], a: 1 },
+            { q: "Rješenje sin(x) = &radic;2/2 u 1. kvadrantu je:", o: ["&pi;/6", "&pi;/3", "&pi;/4", "&pi;"], a: 2 },
+            { q: "Pronađi tačan obrazac:", o: ["tg&alpha; = 1/sin&alpha;", "tg&alpha; = cos&alpha;/sin&alpha;", "tg&alpha; = -1/ctg&alpha;", "tg&alpha; = sin&alpha;/cos&alpha;"], a: 3 },
+            { q: "Ako je sin&alpha; = -12/13 u 4. kvadrantu, onda je cos&alpha;:", o: ["-5/13", "5/13", "-12/13", "13/5"], a: 1 },
+            { q: "Uprosti izraz (1/cos<sup>2</sup>x) - (1/ctg<sup>2</sup>x):", o: ["cos<sup>2</sup>x", "1", "-1", "tg<sup>2</sup>x"], a: 1 },
+            { q: "Ako je tg&alpha; = -2, vrijednost (sin&alpha;+cos&alpha;)/(cos&alpha;-sin&alpha;) je:", o: ["1", "1/2", "-1/3", "4"], a: 2 },
+            { q: "Rješenja nejednačine cos(x) > 1/2 su:", o: ["-&pi;/3 < x < &pi;/3", "-&pi; < x < &pi;", "x > &pi;/2 + 2k&pi;", "-&pi;/3 + 2k&pi; < x < &pi;/3 + 2k&pi;"], a: 3 },
+            { q: "Dužina duži AB, A(-3, 2), B(1, 6) je:", o: ["4&radic;2", "2&radic;5", "2&radic;17", "&radic;26"], a: 0 },
+            { q: "Koeficijent pravca i odsječak na y-osi za 4x - 8y - 9 = 0:", o: ["k=4/8, n=9", "k=2, n=-9", "k=1/2, n=9/4", "k=1/2, n=-9/8"], a: 3 },
+            { q: "Prava (5/13)x + (12/13)y - 17 = 0 je u:", o: ["eksplicitnom", "normalnom", "segmentnom", "implicitnom"], a: 1 },
+            { q: "Centar i poluprečnik kružnice x<sup>2</sup> + y<sup>2</sup> - 10x - 2 = 0:", o: ["S(5,0), r=27", "S(-5,0), r=3&radic;3", "S(5,0), r=3&radic;3", "S(-5,0), r=27"], a: 2 },
+            { q: "Jednačina x<sup>2</sup> + 4y<sup>2</sup> = 16 predstavlja:", o: ["kružnicu", "hiperbolu", "elipsu", "parabolu"], a: 2 },
+            { q: "Koja tačka pripada hiperboli 2x<sup>2</sup> - y<sup>2</sup> = 2:", o: ["A(1, -1)", "B(-1, 0)", "C(-2, 1)", "D(0, 1)"], a: 0 },
+            { q: "Tangenta parabole y<sup>2</sup> = 4x u tački T(1, -2) glasi:", o: ["y = x + 1", "x - y + 1 = 0", "x + y - 1 = 0", "x + y + 1 = 0"], a: 3 },
+            { q: "Skrati razlomak (n+2)! / (n-1)!:", o: ["(n+2)(n+1)n", "n(n+1)", "(n-1)(n+1)", "1 / (n+2)(n+1)n"], a: 0 },
+            { q: "Odaberi tačnu jednakost:", o: ["(a,b) = {x|a&le;x<b}", "(a,b) = {x|a<x<b}", "(a,b) = {x|a<x&le;b}", "(a,b) = {x|a&le;x&le;b}"], a: 1 },
+            { q: "Diferencija niza -1/2, 1/2, 3/2, 5/2... je:", o: ["d=1/2", "d=2", "d=1", "d=-1/2"], a: 2 },
+            { q: "Deseti član geometrijskog niza -1, 2, -4, 8... je:", o: ["-512", "1024", "256", "512"], a: 3 },
+            { q: "Suma prvih n članova geometrijskog niza je:", o: ["S<sub>n</sub> = n(a<sub>1</sub>+a<sub>n</sub>)/2", "S<sub>n</sub> = n(1-q<sup>n</sup>)/(1-q)", "S<sub>n</sub> = a<sub>1</sub>(1-q<sup>n</sup>)/(1-q)", "S<sub>n</sub> = a<sub>1</sub>(1-q<sup>n-1</sup>)/(1-q)"], a: 2 },
+            { q: "Granična vrijednost (3n<sup>2</sup>+5n-1)/(n<sup>2</sup>-7n+32) kada n &rarr; &infin;:", o: ["3", "0", "inf", "-3"], a: 0 },
+            { q: "Izračunaj lim x/(x-2) kada x &rarr; 2-0:", o: ["1", "&infin;", "-&infin;", "2"], a: 2 },
+            { q: "Izračunaj lim (1 - 2x)<sup>1/x</sup> kada x &rarr; 0:", o: ["0", "e<sup>2</sup>", "e<sup>-2</sup>", "inf"], a: 2 },
+            { q: "Prvi izvod funkcije y = 1/x je:", o: ["x<sup>-1</sup>", "-1/x<sup>2</sup>", "x<sup>-2</sup>", "1/x<sup>2</sup>"], a: 1 },
+            { q: "Treći izvod funkcije y = cos(x) je:", o: ["-sin(x)", "-cos(x)", "cos(x)", "sin(x)"], a: 3 },
+            { q: "Izvod količnika f(x)/g(x) je:", o: ["(f'g - fg') / g<sup>2</sup>", "f' / g'", "(fg' - f'g) / g<sup>2</sup>", "(f'g + fg') / g<sup>2</sup>"], a: 0 },
+            { q: "Oblast definisanosti y = &radic;(x<sup>2</sup> - 1) je:", o: ["(-&infin;, -1] U [1, &infin;)", "[1, &infin;)", "(-&infin;, -1) U (1, &infin;)", "[-1, 1]"], a: 0 },
+            { q: "Nule funkcije y = (x<sup>2</sup> - 4) / (x + 3) su:", o: ["x=2", "nema nula", "x = &plusmn;2", "x = &plusmn;4"], a: 2 },
+            { q: "Funkcija y = (x - 3)e<sup>x</sup> siječe y-osu u:", o: ["A(3, 0)", "B(0, -3)", "C(0, 0)", "D(0, -3e)"], a: 1 }
+        ],
+       "Fizika": [
+            { q: "Rezultat dijeljenja 37,9 : 3,41 (pazeći na značajne cifre) je:", o: ["11,114", "11,11", "11,0", "11,1"], a: 3 },
+            { q: "Rezultat množenja 17,1 &sdot; 3,14 (pazeći na značajne cifre) je:", o: ["53,694", "53,6", "53,7", "53,69"], a: 2 },
+            { q: "Koja od ovih veličina nije vektorska?", o: ["pomak", "vrijeme", "brzina", "ubrzanje"], a: 1 },
+            { q: "Koja je brzina najveća?", o: ["2&sdot;10<sup>5</sup> m/s", "2&sdot;10<sup>7</sup> km/h", "2&sdot;10<sup>8</sup> cm/s", "2&sdot;10<sup>3</sup> km/s"], a: 0 },
+            { q: "Automobil se kreće ravnomjerno ubrzano. Tačna tvrdnja je:", o: ["Ubrzanje ravnomjerno raste", "Put ravnomjerno raste", "Brzina ravnomjerno raste", "Brzina se ne mijenja"], a: 2 },
+            { q: "Tijelo bačeno vertikalno uvis (v<sub>0</sub>=20 m/s) dostiže max visinu nakon:", o: ["0,5 s", "1,0 s", "2,0 s", "9,0 s"], a: 2 },
+            { q: "Ako kanap pri kretanju po kružnici pukne, kamen će se kretati:", o: ["prema centru", "od centra", "prestat će", "u pravcu tangente"], a: 3 },
+            { q: "Koji izraz predstavlja frekvenciju f?", o: ["2&pi;T", "2&pi;/T", "&omega;/2&pi;", "2&pi;/&omega;"], a: 2 },
+            { q: "U kom primjeru (različiti položaji tijela) je sila trenja najveća?", o: ["u primjeru 1", "u primjeru 2", "u primjeru 3", "ista je u sva tri"], a: 3 },
+            { q: "Jabuka (100g) slobodno pada. Njena težina tokom pada je:", o: ["9,81 N", "0,981 N", "98,1 N", "0 N"], a: 3 },
+            { q: "Na opruzi visi teg u mirovanju. Koje su sile jednake?", o: ["Sila elastičnosti i sila Zemljine teže", "Sila potiska i težina tega", "Sila trenja i elastičnost", "Elastičnost i potisak"], a: 0 },
+            { q: "Kako se pomjeriti nasred savršeno glatkog leda?", o: ["raširiti ruke", "podići ruke", "baciti odjeću ka obali", "baciti odjeću suprotno od obale"], a: 3 },
+            { q: "Mjesec se kreće oko Zemlje brzinom:", o: ["prvom kosmičkom", "drugom kosmičkom", "trećom kosmičkom", "četvrtom kosmičkom"], a: 0 },
+            { q: "Koja veličina kod rotacije odgovara masi kod translacije?", o: ["moment sile", "moment impulsa", "količina kretanja", "moment inercije"], a: 3 },
+            { q: "Jabuka se otkine u trenutku izbacivanja strijele (horizontalno). Šta biva?", o: ["strijela ide iznad", "strijela pogodi jabuku", "strijela ide ispod", "nijedno"], a: 1 },
+            { q: "Kada se sila otpora vazduha izjednači sa težinom padobranca, kretanje je:", o: ["Ravnomjerno", "Ravnomjerno ubrzano", "Ravnomjerno usporeno", "Mirovanje"], a: 0 },
+            { q: "Zašto krplje smanjuju tonjenje u snijeg?", o: ["veći pritisak zbog površine", "manji pritisak zbog veće površine", "hrapavija površina", "manja površina"], a: 1 },
+            { q: "Rezultat pada pera i kugle istovremeno na Mjesecu pokazuje:", o: ["nema gravitacije", "pero je teže tamo", "ubrzanje je manje", "padaju isto jer nema otpora zraka"], a: 3 },
+            { q: "Kofer (10kg) držimo u ruci na visini 40cm. Rad koji vršimo je:", o: ["4 J", "40 J", "0 J", "400 J"], a: 2 },
+            { q: "Količina kretanja kamiona (30t) pri 54 km/h je:", o: ["200 000 kgm/s", "12 000 kgm/s", "1 700 kgm/s", "450 000 kgm/s"], a: 3 },
+            { q: "Sila motora za 1,5t auto (0-36km/h za 5s) je:", o: ["5 kN", "3 kN", "80 kN", "12 kN"], a: 1 },
+            { q: "Zakon o ravnomjernom prenosu pritiska u fluidima je:", o: ["Džulov", "Arhimedov", "Paskalov", "Zakon spojenih sudova"], a: 2 },
+            { q: "Jedan paskal (Pa) je jednak:", o: ["N/m", "N&sdot;m", "N&sdot;m<sup>2</sup>", "N/m<sup>2</sup>"], a: 3 },
+            { q: "Tijelo je pozitivno naelektrisano ako ima:", o: ["Višak elektrona", "Višak neutrona", "Višak protona", "Manjak neutrona"], a: 2 },
+            { q: "Klatna 1(+), 2, 3 i 4 se privlače/odbijaju. Ako 1 privlači 2, 2 odbija 3, a 3 privlači 4, naboji su:", o: ["2(-), 3(+), 4(-)", "2(-), 3(-), 4(+)", "2(+), 3(-), 4(-)", "2(-), 3(-), 4(-)"], a: 0 },
+            { q: "Dovedeno naelektrisanje provodniku raspodjeljuje se:", o: ["unutra", "samo na površini", "unutra i na površini", "nigdje"], a: 1 },
+            { q: "Dva jednaka kondenzatora serijski daju 1 &mu;F. Jedan ima:", o: ["1 &mu;F", "2 &mu;F", "4 &mu;F", "0,5 &mu;F"], a: 1 },
+            { q: "Brzina električne struje je:", o: ["malo veća od elektrona", "malo manja od elektrona", "jednaka elektronima", "jednaka brzini svjetlosti"], a: 3 },
+            { q: "Koja od ovih veličina nije vektorska?", o: ["Jačina polja", "Jačina struje", "Gustina struje", "Kulonova sila"], a: 1 },
+            { q: "Jedinica za elektromotornu silu izvora je:", o: ["njutn", "džul", "volt", "paskal"], a: 2 },
+            { q: "Toplota se poveća 4 puta ako se struja poveća:", o: ["16 puta", "8 puta", "4 puta", "2 puta"], a: 3 },
+            { q: "Tesla (1T) je SI jedinica za:", o: ["Jačinu magnetnog polja", "Magnetni fluks", "Gustinu magnetnog fluksa", "Električni fluks"], a: 2 },
+            { q: "Supstance sa permeabilnošću malo većom od 1 su:", o: ["Paramagnetici", "Dijamagnetici", "Feromagnetici", "Elektromagnetici"], a: 0 },
+            { q: "U kojoj sredini svjetlost ima najveću brzinu?", o: ["voda", "staklo", "dijamant", "vakuum"], a: 3 },
+            { q: "Svjetlost se prelama ka normali. To znači:", o: ["Brzina u prvoj je veća", "Brzina u prvoj je manja", "Frekvencija u prvoj je veća", "Frekvencija je manja"], a: 0 },
+            { q: "Indeks vode je 1,33. Brzina svjetlosti u vodi je (km/s):", o: ["250 000", "225 000", "225 564", "125 000"], a: 1 },
+            { q: "Žižna daljina f = 6 cm. Optička moć je:", o: ["0,167 D", "16,7 D", "1,67 D", "6,0 D"], a: 1 },
+            { q: "Kada svjetlost pređe iz vazduha u vodu:", o: ["pada frekvencija", "raste frekvencija", "pada brzina", "raste brzina"], a: 2 },
+            { q: "Jedinica za osvjetljenost je:", o: ["lumen", "luks", "kandela", "steradijan"], a: 1 },
+            { q: "Indeks stakla je 1,5. Brzina u staklu je (c=vakuum):", o: ["c", "3c/2", "2c/3", "c/2"], a: 2 },
+            { q: "Predmet između sabirnog sočiva i žiže daje lik:", o: ["Uspravan i imaginaran", "Uspravan i realan", "Izvrnut i imaginaran", "Izvrnut i realan"], a: 0 },
+            { q: "Lupa je:", o: ["konvergentno sočivo", "konkavno ogledalo", "divergentno sočivo", "konveksno ogledalo"], a: 0 },
+            { q: "Pri zagrijavanju željeza, prvo se pojavi:", o: ["ljubičasta", "plava", "žuta", "crvena boja"], a: 3 },
+            { q: "Energija EM zračenja je:", o: ["prop. talasnoj dužini", "obrnuto prop. frekvenciji", "obrnuto prop. talasnoj dužini", "nezavisna"], a: 2 },
+            { q: "Temperatura crnog tijela raste 3 puta. Intenzitet raste:", o: ["81 put", "3 puta", "9 puta", "27 puta"], a: 0 },
+            { q: "EM zračenja od najmanje do najveće talasne dužine:", o: ["X, UV, IC, mikro", "mikro, IC, UV, X", "IC, UV, X, mikro", "X, UV, IC, mikro"], a: 0 },
+            { q: "Energija fotona je:", o: ["prop. talasnoj dužini", "obrnuto prop. talasnoj dužini", "obrnuto prop. frekvenciji", "nezavisna"], a: 1 },
+            { q: "U Wienovom zakonu &lambda;<sub>m</sub> je talasna dužina:", o: ["maksimalna", "minimalna", "gdje je intenzitet max", "gdje je intenzitet min"], a: 2 },
+            { q: "Grčka riječ 'atomos' znači:", o: ["malen", "posljednji", "nedjeljiv", "nevidljiv"], a: 2 },
+            { q: "Bohrov model: moment impulsa je:", o: ["mvr = nh", "mvr = n 2&pi;/h", "mvn = r h/2&pi;", "mvr = n h/2&pi;"], a: 3 },
+            { q: "Izraz &lambda; = h/(mv) predstavlja:", o: ["Wienov zakon", "Bohrov postulat", "Zakon raspada", "De Broglijevu dužinu"], a: 3 },
+            { q: "Rutherfordov model atoma se naziva:", o: ["kolač s grožđicama", "puding sa šljivama", "planetarni model", "kvantni model"], a: 2 },
+            { q: "Atom vodonika emituje foton kada:", o: ["se kreće po orbiti", "prelazi sa više na nižu energiju", "prelazi sa niže na višu energiju", "miruje"], a: 1 },
+            { q: "Glavni kvantni broj n određuje:", o: ["moment impulsa", "dimenzije", "nivo energije", "projekciju momenta"], a: 2 },
+            { q: "Vrijednosti orbitalnog broja l za n=3 su:", o: ["1, 2", "0, 1, 2", "0, 1, 2, 3", "1, 2, 3"], a: 1 },
+            { q: "Ko je postavio princip isključenja (4 različita broja)?", o: ["Planck", "Pauli", "Heisenberg", "Einstein"], a: 1 },
+            { q: "Najveći broj elektrona u N ljusci je:", o: ["18", "16", "9", "32"], a: 3 },
+            { q: "Vrsta atoma se mijenja ako se promijeni broj:", o: ["elektrona", "protona", "neutrona", "zbir neutrona i elektrona"], a: 1 },
+            { q: "Izotopi su atomi:", o: ["isti A i isti Z", "isti A, različit Z", "različit A, isti Z", "različit A i Z"], a: 2 },
+            { q: "Broj neutrona u vodoniku, deuterijumu i tricijumu je:", o: ["0, 1, 2", "0, 2, 3", "1, 2, 3", "2, 3, 4"], a: 0 },
+            { q: "Koja sila drži jezgro na okupu?", o: ["gravitaciona", "EM", "jaka sila", "slaba sila"], a: 2 },
+            { q: "Radioaktivnost je otkrio:", o: ["Einstein", "Rentgen", "Tesla", "Becquerel (Rutherford u izvoru?)"], a: 3 },
+            { q: "Pri emisiji &alpha;-čestice broj protona se:", o: ["poveća za 2", "smanji za 2", "poveća za 4", "smanji za 4"], a: 1 },
+            { q: "Pri emisiji &beta;-čestice:", o: ["raste broj nukleona", "pada broj nukleona", "raste broj protona", "pada broj protona"], a: 2 },
+            { q: "Vrijeme poluraspada je:", o: ["vrijeme za pola jezgra", "pola ukupnog vremena", "vrijeme za pola jezgra (dupli)", "vrijeme za raspad polovine jezgara"], a: 3 },
+            { q: "Nakon t=2T, od 100 jezgara ostaje neraspadnuto:", o: ["75", "50", "25", "12"], a: 2 },
+            { q: "Proces nastajanja Sunčeve energije je:", o: ["nuklearna fisija", "He u H", "H u He", "radioaktivni raspad"], a: 2 },
+            { q: "Lančana reakcija nastaje jer:", o: ["jezgro se samo polovi", "elektroni cijepaju nova", "protoni cijepaju nova", "neutroni cijepaju nova jezgra"], a: 3 }
+        ],
+  "Hemija": [
+            { q: "Atom je izgrađen od:", o: ["Protona i neutrona", "Elektrona i jona", "Elektrona, protona i neutrona", "Izotopa"], a: 2 },
+            { q: "Koja je tvrdnja tačna vezano za masu tokom hemijske reakcije?", o: ["Ukupna masa tokom reakcije se mijenja", "Ukupna masa tokom reakcije se ne mijenja", "Hemijski elementi su složene tvari", "Reakcije se odvijaju samo u gasovitom stanju"], a: 1 },
+            { q: "Joni elemenata IIA grupe imaju oksidacioni broj:", o: ["-1", "+3", "+4", "+2"], a: 3 },
+            { q: "p-Podljuska može da primi najviše:", o: ["2 elektrona", "10 elektrona", "6 elektrona", "18 elektrona"], a: 2 },
+            { q: "Izotopi su atomi:", o: ["Koji imaju isti broj protona i elektrona", "Koji imaju isti broj protona i neutrona", "Koji imaju isti broj protona, a različit broj elektrona", "Koji imaju isti broj protona, a različit broj neutrona"], a: 1 },
+            { q: "Elementi u PSE su poredani prema:", o: ["Broju elektrona u K-ljusci", "Rastućoj atomskoj masi", "Porastu atomskog broja", "Porastu broja neutrona"], a: 2 },
+            { q: "Jedinica za količinsku koncentraciju je:", o: ["kg/dm<sup>3</sup>", "mol/dm<sup>3</sup>", "mol/kg", "Pa m<sup>3</sup>"], a: 1 },
+            { q: "Kiseline su spojevi čiji je pH:", o: ["pH=7", "pH ispod 7", "pH iznad 7", "pH od 0-14"], a: 1 },
+            { q: "Koliko CO<sub>2</sub> nastaje žarenjem 200g CaCO<sub>3</sub> (CaCO<sub>3</sub> &rarr; CaO + CO<sub>2</sub>)?", o: ["100 g", "44 g", "88 g", "126 g"], a: 2 },
+            { q: "Atom sa rednim brojem Z=12 ima:", o: ["6 protona i 6 elektrona", "2 protona i 10 elektrona", "5 protona i 7 elektrona", "12 protona i 12 elektrona"], a: 3 },
+            { q: "Grafit je:", o: ["Veoma tvrd", "Izolator", "Provodnik elektriciteta", "Alotropska modifikacija silicijuma"], a: 2 },
+            { q: "Fosfor se javlja kao modifikacije:", o: ["Bijeli, crveni i crni", "Bijeli, žuti i crveni", "Žuti, crveni i crni", "Bijeli, ljubičasti i crni"], a: 0 },
+            { q: "Formule oksokiselina hlora su:", o: ["HCl, HClO, NaCl i KCl", "HClO, HClO<sub>2</sub>, HClO<sub>3</sub> i HClO<sub>4</sub>", "KCl, HCl, LiCl i HClO", "Ca, HClO, HCl i NaCl"], a: 1 },
+            { q: "Ozon je alotropska modifikacija:", o: ["Vazduha", "Nitrogena", "Hidrogena", "Oksigena"], a: 3 },
+            { q: "Neutralizacija je reakcija između:", o: ["Kiseline i vode", "Baze i soli", "Kiseline i baze", "Soli i vode"], a: 2 },
+            { q: "Korozija je hemijska reakcija:", o: ["Oksidacije metala", "Redukcije metala", "Neutralizacije metala", "Hidrogenizacije metala"], a: 0 },
+            { q: "Dijamant je:", o: ["Lahko lomljiv", "Provodnik elektriciteta", "Alotropska modifikacija karbona (C)", "Crn"], a: 2 },
+            { q: "Aluminij se dobija iz rude:", o: ["Hematit", "Halkopirit", "Boksid", "Siderit"], a: 2 },
+            { q: "Barski ili rudarski gas je:", o: ["Hlor", "Metan", "Metanal", "Hidrogen"], a: 1 },
+            { q: "Ugljikovodici sa dvostrukom vezom su:", o: ["Alkoholi", "Alkeni", "Alkani", "Alkini"], a: 1 },
+            { q: "Funkcionalna grupa karakteristična za alkohole je:", o: ["Keto grupa", "Hidroksilna grupa", "Aldehidna grupa", "Amino grupa"], a: 1 },
+            { q: "Formula HCOOH predstavlja:", o: ["Propan kiselina", "Aceton", "Metan kiselina", "Metanal"], a: 2 },
+            { q: "Reakcija alkoholnog vrenja je:", o: ["CO<sub>2</sub> + H<sub>2</sub>O &rarr; H<sub>2</sub>CO<sub>3</sub>", "CaO + CO<sub>2</sub> &rarr; CaCO<sub>3</sub>", "C<sub>6</sub>H<sub>12</sub>O<sub>6</sub> &rarr; 2C<sub>2</sub>H<sub>5</sub>OH + 2CO<sub>2</sub>", "S + O<sub>2</sub> &rarr; SO<sub>3</sub>"], a: 2 },
+            { q: "IUPAC nomenklatura je:", o: ["Neorganska", "Organska", "Sistem imenovanja od IUPAC unije", "Trivijalni naziv"], a: 2 },
+            { q: "Nezrelom limunu da dozre ubrizgava se:", o: ["Etan", "Etanol", "Eten", "Etin"], a: 2 },
+            { q: "Reakcije adicije su:", o: ["Reakcije zamjene", "Reakcije supstitucije", "Reakcije eliminacije", "Reakcije pripajanja"], a: 3 },
+            { q: "Formula benzena (C<sub>6</sub>H<sub>6</sub>) je izgrađena od:", o: ["6 atoma karbona i 6 hidrogena", "6 karbona i 6 oksigena", "3 karbona i 3 hidrogena", "12 karbona i 12 hidrogena"], a: 0 },
+            { q: "Glicerol se upotrebljava u proizvodnji:", o: ["Nafte", "Margarina", "Nitroglicerola", "Sapuna"], a: 2 },
+            { q: "Za pravljenje infuzije koristi se šećer:", o: ["Saharoza", "Glukoza", "Celuloza", "Fruktoza"], a: 1 },
+            { q: "U čovjekovom organizmu željezo izgrađuje:", o: ["Kolagen", "Hemoglobin", "Mioglobin", "Kreatin"], a: 1 },
+            { q: "Saharoza se dobija iz:", o: ["Lana i konoplje", "Pamuka i lana", "Trske i repe", "Repe i drveta"], a: 2 },
+            { q: "Masti i ulja su po hemijskom sastavu:", o: ["Triacilgliceroli", "Acetali", "Enoli", "Fenoli"], a: 0 },
+            { q: "Sapuni su po sastavu:", o: ["Alkalne soli viših masnih kiselina", "Zemnoalkalne soli", "Soli karboksilnih kiselina", "Amidi"], a: 0 },
+            { q: "U prirodi je prisutno ovoliko različitih aminokiselina:", o: ["10", "20", "30", "25"], a: 1 },
+            { q: "Molekula ATP-a je izgrađena iz:", o: ["Šećera, baze i fosfata", "Šećera, kiseline i fosfata", "Vode, baze i kiseline", "Šećera, vode i fosfata"], a: 0 },
+            { q: "Koja od navedenih grupa je karakteristična za alkohole:", o: ["karboksilna", "aldehidna", "hidroksilna", "keto"], a: 2 },
+            { q: "Esteri su spojevi koji:", o: ["su derivati karbohidrogena", "imaju karboksilnu grupu", "su derivati benzena", "nastaju reagovanjem kiselina i alkohola"], a: 3 },
+            { q: "Alkene karakteriše:", o: ["jednostruka veza", "dvostruka veza", "trostruka veza", "četvorostruka"], a: 1 },
+            { q: "Masena koncentracija sastojka (A) predstavlja odnos:", o: ["količine i zapremine", "mase sastojka i svih supstanci", "mase sastojka i zapremine rastvora", "mase rastvora i rastvarača"], a: 2 },
+            { q: "Nastavak koji karakteriše alkine je:", o: ["-ol", "-an", "-in", "-il"], a: 2 },
+            { q: "1 A u sekundi odgovara:", o: ["1 C", "1 V", "1 molu", "1 atomu"], a: 0 },
+            { q: "Napiši reakciju disocijacije i konstantu sulfatne kiseline:", o: ["H<sub>2</sub>SO<sub>4</sub> &rightleftharpoons; H<sup>+</sup> + SO<sub>4</sub><sup>2-</sup>", "H<sub>2</sub>SO<sub>4</sub> &rightleftharpoons; 2H<sup>+</sup> + SO<sub>4</sub><sup>-</sup>", "H<sub>2</sub>SO<sub>4</sub> &rightleftharpoons; 2H<sup>+</sup> + SO<sub>4</sub><sup>2-</sup> (K = c<sup>2</sup>(H<sup>+</sup>)&sdot;c(SO<sub>4</sub><sup>2-</sup>)/c(H<sub>2</sub>SO<sub>4</sub>))", "H<sub>2</sub>SO<sub>3</sub> &rightleftharpoons; 2H<sup>+</sup> + SO<sub>3</sub><sup>2-</sup>"], a: 2 },
+            { q: "Ako je koncentracija hidrogenovih jona 10<sup>-5</sup> mol/l, pH i pOH su:", o: ["pH=5, pOH=10", "pH=5, pOH=9", "pH=4, pOH=10", "pH=7, pOH=7"], a: 1 },
+            { q: "Baterije su primarni galvanski članci koji:", o: ["se mogu puniti", "se malo mogu puniti", "se ne mogu puniti", "se djelimično pune"], a: 2 },
+            { q: "Naučnik Galvani je radio eksperimente na:", o: ["miševima", "žabljim ekstremitetima", "glistama", "gušterima"], a: 1 },
+            { q: "Koliko g NaCl treba za 500 ml rastvora konc. 0,5 mol/l?", o: ["5g", "10g", "15g", "12g"], a: 2 },
+            { q: "Molarna masa gasa (1g, 0.982 dm<sup>3</sup>, 100&deg;C, 98.63 kPa):", o: ["23.02 g/mol", "30.00 g/mol", "29.06 g/mol", "32.02 g/mol"], a: 2 },
+            { q: "Količina elektriciteta (10A, 1h):", o: ["3600C", "36000C", "63000C", "30600C"], a: 1 },
+            { q: "Litij jon polimer baterija izgrađena je od:", o: ["Kalcijuma i litija", "Cink-hlorida", "Litijuma, karbona i manganovog oksida", "Cinka i srebra"], a: 2 },
+            { q: "Od navedenih rastvora, elektrolit je:", o: ["Rastvor NaCl", "Rastvor amonijaka", "Rastvor uree", "Rastvor šećera"], a: 0 }
+        ],
+
+          "Biologija": [
+            { q: "Osnovni živi sistemi u biologiji su:", o: ["jedinke i atomi", "atomi i molekule", "ćelije i molekule", "ćelije i jedinke"], a: 3 },
+            { q: "Biljna i životinjska ćelija se NE razlikuju po sljedećoj organeli:", o: ["plastidi", "centrosomi", "ribosomi", "vakuola"], a: 2 },
+            { q: "Nasljedni materijal prokariota je koncentrisan u dijelu ćelije koji se naziva:", o: ["nukleolus", "nukleus", "nukleoid", "genom"], a: 2 },
+            { q: "Gameti nastaju:", o: ["mitozom", "ćelijskim ciklusom", "mejozom", "kelvinovim ciklusom"], a: 2 },
+            { q: "Broj hromosoma koji je svojstven čovjeku je:", o: ["46 i naziva se diploidan", "44 i naziva se diploidan", "47 i naziva se haploidan", "45 i naziva se haploidan"], a: 0 },
+            { q: "Mitozom nastaju ćelije:", o: ["sa diploidnim brojem hromosoma", "sa polovičnim brojem hromosoma", "sa haploidnim brojem hromosoma", "sa diploidnim ali i haploidnim brojem hromosoma"], a: 0 },
+            { q: "Proces mitoze se odvija kroz faze, a jedna od njih NE pripada mitozi:", o: ["profaza", "interfaza", "metafaza", "anafaza"], a: 1 },
+            { q: "Proces diobe ćelije kojom nastaju gameti naziva se:", o: ["dijeljenje spolnih ćelija", "amitoza", "mejoza", "ćelijski ciklus"], a: 2 },
+            { q: "Potpuno formirani hromosomi u ekvatorijalnoj ravni ćelije vidljivi su u:", o: ["anafazi", "profazi", "telofazi", "metafazi"], a: 3 },
+            { q: "Profaza I mejoze I traje najduže, i odvija se redoslijedom sljedećih podfaza:", o: ["leptoten – zigoten – diploten – pahiten – dijakineza", "leptoten – pahiten – diploten – zigoten – dijakineza", "leptoten – zigoten – pahiten – diploten – dijakineza", "leptoten – pahiten – zigoten – diploten – dijakineza"], a: 2 },
+            { q: "U fiziologiji biljaka proces transpiracije predstavlja:", o: ["odavanje svjetlosti preko listova", "odavanje vode preko listova u obliku vodene pare", "odavanje zelenila u obliku molekule hlorofila", "odavanje energije u obliku ATP molekula"], a: 1 },
+            { q: "Heterotrofija je oblik ishrane svojstven za:", o: ["zelene biljke, bakterije i gljive", "gljive, životinje i čovjeka", "viruse, bakterije i alge", "alge, gljive i lišajeve"], a: 1 },
+            { q: "Fotosinteza u biljnom svijetu predstavlja:", o: ["proces u kome zelene biljke sintetiziraju neorganske materije", "proces u kome zelene biljke i neke bakterije sintetiziraju organske materije", "proces u kome se sintetiziraju molekule hlorofila", "proces u kome se sintetizira hemijska energija ATP-a"], a: 1 },
+            { q: "Klijanje sjemena je složen proces na koji utiče više faktora, a najvažniji su:", o: ["zemljište, azot i vrsta biljke", "temperatura, svjetlost, kiseonik i voda", "vlažnost, čistoća i porijeklo sjemena", "svjetlost, nadmorska visina i mirovanje"], a: 1 },
+            { q: "U centralnom nervnom sistemu nalaze se posebne ćelije nazvane:", o: ["neuriti", "dendriti", "neuroni", "aksoni"], a: 2 },
+            { q: "Centar za ravnotežu i koordinaciju pokreta tijela čovjeka nalazi se u:", o: ["Međumozgu", "Velikom mozgu", "Malom mozgu", "Srednjem mozgu"], a: 2 },
+            { q: "Osnovni dijelovi vegetativnog nervnog sistema su:", o: ["Mozak i kičmena moždina", "Simpatički i parasimpatički nervni sistem", "Somatični i autonomni", "Osjetilni i pokretački"], a: 1 },
+            { q: "Fotoreceptorski dio oka čovjeka je:", o: ["mrežnjača", "rožnjača", "beonjača", "sudovnjača"], a: 0 },
+            { q: "Receptori za čulo sluha kod čovjeka su smješteni u:", o: ["slušnom nervu", "srednjem uhu", "kortijevom organu unutrašnjeg uha", "bubnoj opni"], a: 2 },
+            { q: "Hormoni štitnjače su:", o: ["tiroksin i trijodtironin", "vazopresin i oksitocin", "adrenalin i noradrenalin", "inzulin i glukagon"], a: 0 },
+            { q: "Početni dio tankog crijeva kod čovjeka je:", o: ["usukano crijevo (ileum)", "slijepo crijevo (caecum)", "dvanaestopalačno crijevo (duodenum)", "prazno crijevo (jejunum)"], a: 2 },
+            { q: "Hemoglobin u krvi je bitan za prenošenje kiseonika, a prisutan je u:", o: ["Limfocitima", "Eritrocitima", "Monocitima", "Trombocitima"], a: 1 },
+            { q: "Nastajanje eritrocita (eritropoeza) obavlja se u:", o: ["Krvi", "Jetri", "Slezeni", "Koštanoj srži"], a: 3 },
+            { q: "Odbrambena svojsva organizma čovjeka svojstvena su ćelijama krvi koje se zovu:", o: ["Leukociti", "Antigeni", "Antitijela", "Eritrocite"], a: 0 },
+            { q: "Mali ili plućni krvotok počinje kretanjem krvi iz:", o: ["Lijeve komore srca", "Desne komore srca", "Lijeve pretkomore", "Desne pretkomore"], a: 1 },
+            { q: "U sistem disajnih organa čovjeka ubrajaju se i dušnice a to su:", o: ["Alveole", "Bronhije", "Bronhiole", "Traheje"], a: 1 },
+            { q: "Osnovni organi za proces ekskrecije kod kičmenjaka su:", o: ["Metanefridije", "Protonefridije", "Bubrezi", "Malpigijevi kanalići"], a: 2 },
+            { q: "Prve zakone o nasljeđivanju otkrio je naučnik:", o: ["James Watson", "Oswald Avery", "Francis Crick", "Gregor Mendel"], a: 3 },
+            { q: "Molekule DNK svakog čovjeka se razlikuju po sljedećoj osobini:", o: ["Broju nukleotida u molekuli", "Redoslijedu heterocikličnih-azotnih baza", "Broju heterocikličnih-azotnih baza", "Redoslijedu šećera dezoksiriboze"], a: 1 },
+            { q: "Udvostručavanje molekule DNK je složen proces koji se naziva:", o: ["Traskripcija DNK", "Replikacija DNK", "Translacija DNK", "Mutacija DNK"], a: 1 },
+            { q: "Varijante istog gena koji zauzima isti položaj na hromosomu nazivaju se:", o: ["Homozigoti", "Genski lokusi", "Heterozigoti", "Aleli"], a: 3 },
+            { q: "Nosilac nasljedne informacije u jedru ćelije je molekula:", o: ["iRNK", "tRNK", "DNK", "rRNK"], a: 2 },
+            { q: "Odnose grupa organizama i njihove životne sredine proučava:", o: ["Idioekologija", "Autekologija", "Sinekologija", "Bioekologija"], a: 2 },
+            { q: "Populaciju u ekologiji NE karakterišu:", o: ["Jedinke iste vrste", "Jedinke se hrane jedna drugom", "Povezanost jedinki reprodukcijom", "Brojnost, natalitet i mortalitet"], a: 1 },
+            { q: "Ekološki održivi uravnoteženi razvoj u prirodi podrazumijeva:", o: ["Da istraživanja treba pratiti svaka osoba", "Da privredni razvoj ne smije ići na štetu prirode", "Da se koriste samo neophodna bogatstva", "Da resursi budu zaštićeni od degradacije"], a: 1 },
+            { q: "Biodiverzitet podrazumijeva biološku:", o: ["Jednakost vrsta", "Sličnost jedinki", "Raznolikost vrsta", "Homogenost jedinki"], a: 2 },
+            { q: "Nacionalni parkovi u BiH su:", o: ["Sutjeska, Kozara, Una, Drina", "Vrelo Bosne, Blidinje, Hutovo Blato", "Bijambare, Sutjeska i Kozara", "Jahorina, Una, Drina i Sutjeska"], a: 0 },
+            { q: "Najproduktivniji ekosistemi kopna su:", o: ["Tundre", "Četinarske šume", "Travnate oblasti", "Tropske šume"], a: 3 },
+            { q: "Životna sredina podrazumijeva:", o: ["Grupu istih živih organizama", "Skup jednakih staništa", "Grupu istih ekoloških faktora", "Skup jednakih populacija"], a: 1 },
+            { q: "Biocenoza je:", o: ["Biljna zajednica", "Životinjska zajednica", "Životna zajednica", "Ljudsku zajednicu"], a: 2 },
+            { q: "Molekulu DNK sačinjavaju nukleotidi od sljedećih komponenti:", o: ["Šećer, fosfatna grupa i azotna baza", "Šećer, vodikova veza i aminokiseline", "Šećer, aminokiseline i azotna baza", "Šećer, vodikova veza i azotna baza"], a: 0 },
+            { q: "Koja se od navedenih azotnih baza nalazi u RNK, ali ne i u DNK:", o: ["Adenin", "Citozin", "Guanin", "Uracil"], a: 3 },
+            { q: "Heterozigot ima:", o: ["Iste alele", "Različite alele", "Samo jedan alel", "Ništa od navedenog"], a: 1 },
+            { q: "Biosinteza proteina u ćeliji dešava se u:", o: ["Jedru", "Mitohondrijama", "Ribosomima", "Lizosomima"], a: 2 },
+            { q: "Hromosomopoatija uzrokovana trisomijom 21 je:", o: ["Edvardsov sindrom", "Downov sindrom", "Klineferterov sindrom", "Patau sindrom"], a: 1 },
+            { q: "Osobe krvne grupe „AB“ mogu dati krv osobama sa krvnom grupom:", o: ["O", "O, A, B, AB", "AB", "A, AB"], a: 2 },
+            { q: "Univerzalni davaoci krvi su osobe sa krvnom grupom:", o: ["A", "B", "O", "AB"], a: 2 },
+            { q: "Suživot dva organizma od kojih oba partnera imaju korist naziva se:", o: ["Poluparazitizam", "Parazitizam", "Simbioza", "Ništa od navedenog"], a: 2 },
+            { q: "Tijelo zeljastih biljaka u najvećoj mjeri je izgrađeno od:", o: ["Mehaničkih tkiva", "Provodnih tkiva", "Kožnog tkiva", "Parenhimskog tkiva"], a: 3 },
+            { q: "Osnovna jedinica nervnog sistema je:", o: ["Nefron", "Neuron", "Nukleus", "Ništa od navedenog"], a: 1 }
+        ],
+		  "Informatika": [
+            { q: "Koji su glavni parametri monitora?", o: ["Tip konektora", "Dužina dijagonale", "Boja", "Rezolucija"], a: 3 },
+            { q: "Vrijednost binarnog izraza 11001101 + 1011100 u heksadecimalnom sistemu je:", o: ["127", "129", "128", "0"], a: 0 },
+            { q: "Jedinica Hz (Herc) se koristi za mjerenje:", o: ["Brzine takta procesora", "Cijene takta", "Brzine memorije", "Broja jezgri"], a: 0 },
+            { q: "Ulazno-izlazni uređaji služe kao:", o: ["Svi uređaji", "Sučelje prema konektoru", "Sučelje prema korisniku", "Sučelje prema interfejsu"], a: 2 },
+            { q: "Suma prosječnih vrijednosti iz kolona A1:A10 i B1:B11 u Excelu je:", o: ["SUM(AVERAGE(A1:A11),AVERAGE(B1:B10))", "SUM(AVERAGE(A1:A10);AVERAGE(B1:B11))", "SUM(AVERAGE(A1:A11);AVERAGE(B1:B10))", "SUM(AVERAGE(A1:A10),AVERAGE(B1:B11))"], a: 1 },
+            { q: "Vrijednost binarnog izraza 11001101 + 101010 u binarnom sistemu je:", o: ["11110111", "0", "11111110", "11101111"], a: 0 },
+            { q: "SSD je skraćenica za:", o: ["Super Speed Drive", "Solid State Dynamic", "Solid State Drive", "Solid State Disk"], a: 2 },
+            { q: "Koliko je 4 * 4 u oktalnom brojnom sistemu?", o: ["0", "24", "20", "16"], a: 2 },
+            { q: "Najpoznatiji proizvođači projektora su:", o: ["Epson, Acer i BenQ", "Kingston, Samsung i LG", "Epson, Acer, BenQ i Lenovo", "Asus, Biostar i Fxconn"], a: 0 },
+            { q: "Dužina procesorske riječi poboljšava performanse tako što:", o: ["povećava ukupan broj obrtaja", "povećava ukupan broj jezgri", "povećava broj ciklusa u sekundi", "povećava broj informacija obrađenih u jednom ciklusu"], a: 3 },
+            { q: "Koliko iznosi oktalni zbir binarnog 11011 i heksadecimalnog A09?", o: ["5404", "5400", "5044", "0"], a: 0 },
+            { q: "Jedinica za mjerenje rezolucije kod digitalne kamere je:", o: ["inch", "dpi", "px (piksel)", "GB"], a: 2 },
+            { q: "Sistem boja koji se koristi kod štampanja slike na izlaznom uređaju je:", o: ["CMYK", "RGB", "HSB", "HDD"], a: 0 },
+            { q: "Šta proučava informatika?", o: ["Primjenu i izgled računara", "Brzinu i način primjene", "Konstrukciju, način funkcionisanja i primjenu računara", "Konstrukciju i oblik"], a: 2 },
+            { q: "Pored Intela, u najpoznatije proizvođače procesora ubrajamo:", o: ["Kingston", "DDR", "AMD", "AMD i Athlon"], a: 2 },
+            { q: "Šta utiče na brzinu memorije?", o: ["Kapacitet", "Dužina procesorske riječi", "Ubrzanost procesora", "Udaljenost procesora od memorijskog uređaja"], a: 3 },
+            { q: "U najpoznatije proizvođače skenera se ubrajaju:", o: ["Epson i LG", "Canon, Epson i Acer", "Canon i Epson", "LG i Canon"], a: 1 },
+            { q: "Koja je od navedenih adresa u Excelu apsolutnog karaktera?", o: ["A$1", "$A$1", "A1", "$A1"], a: 1 },
+            { q: "Šta se ubraja u Flash memoriju?", o: ["CD i DVD", "USB stick i SD card", "HDD i SSD", "AGP i PCI"], a: 1 },
+            { q: "Koji je ekvivalent heksadecimalnog broja 1011 u decimalnom sistemu?", o: ["4113", "4311", "0", "4131"], a: 0 },
+            { q: "U zavisnosti od usmjerenosti signala, I/O uređaje dijelimo na:", o: ["Crne i bijele", "Sučelje prema tastaturi", "Sučelje prema monitoru", "Sučelje prema korisniku i uređaju"], a: 3 },
+            { q: "U osnovne logičke funkcije ubrajamo:", o: ["I, IF i ELSE", "I, ILI i NE", "NE, ILI i DA", "TRUE i FALSE"], a: 1 },
+            { q: "Raspored tastera na tastaturi za bosanski jezik ima oznaku:", o: ["QWERTY", "ASDFGH", "ABCČĆD", "QWERTZ"], a: 3 },
+            { q: "Koja je mjerna jedinica za veličinu fonta?", o: ["mm", "pt (point)", "in", "nema mjerne jedinice"], a: 1 },
+            { q: "Kako se definira 1 pt?", o: ["72 mm", "1/72 mm", "72 in", "1/72 in"], a: 3 }
+        ],
+        "Tjelesni odgoj": [
+            { q: "Moto Olimpijskih igara glasi:", o: ["Veni Vidi Vici", "Per aspera ad astra", "Momento mori", "Citius, altius, fortius"], a: 3 },
+            { q: "Povreda lakta ('teniski lakat') je najizraženija kod:", o: ["Atletike", "Hokeja na travi", "Tenisa", "Nogometa"], a: 2 },
+            { q: "„Cepelin“ je završnica napada u kojem sportu?", o: ["Košarka", "Badminton", "Rukomet", "Vaterpolo"], a: 2 },
+            { q: "Minimalna visina za iskakanje sa padobranom je:", o: ["50 m", "100 m", "150 m", "200 m"], a: 1 },
+            { q: "VAR u nogometu znači:", o: ["Video Assistant Referee", "Video Access Referee", "Vertical Access Referee", "Video Arbitraža i Regulacija"], a: 0 },
+            { q: "Prve moderne Olimpijske igre održane su u:", o: ["Madridu", "Zagrebu", "Sarajevu", "Atini"], a: 3 },
+            { q: "Prve moderne olimpijske igre održane su:", o: ["1896. godine", "1905. godine", "1915. godine", "1931. godine"], a: 0 },
+            { q: "Prvi selektor nogometne reprezentacije BiH bio je:", o: ["Džemaludin Mušović", "Blaž Slišković", "Fuad Muzurović", "Sakib Malkočević"], a: 2 },
+            { q: "Najbolji strijelac nogometne reprezentacije BiH je:", o: ["Elvir Bolić", "Edin Džeko", "Edin Mujčin", "Vedad Ibišević"], a: 1 },
+            { q: "U kojem sportu se izvode vježbe na vratilu?", o: ["Gimnastika", "Atletika", "Umjetničko klizanje", "Boks"], a: 0 },
+            { q: "Prečnik obruča u košarci je:", o: ["35 cm", "40 cm", "45 cm", "50 cm"], a: 2 },
+            { q: "Na kojoj je visini postavljen obruč u košarci?", o: ["2,95 m", "3,00 m", "3,05 m", "3,10 m"], a: 2 },
+            { q: "Džudo vodi porijeklo iz:", o: ["Kine", "Koreje", "Japana", "Mongolije"], a: 2 },
+            { q: "Svjetski rekord Usaina Bolta na 100 metara iznosi:", o: ["9.48 s", "9.58 s", "9.68 s", "9.78 s"], a: 1 },
+            { q: "Turneja „Četiri skakaonice“ održava se u:", o: ["Sloveniji i Austriji", "Švicarskoj i Njemačkoj", "Hrvatskoj i Sloveniji", "Njemačkoj i Austriji"], a: 3 },
+            { q: "Visina mreže u odbojci za seniore je:", o: ["2.43 m", "2.53 m", "2.63 m", "2.73 m"], a: 0 },
+            { q: "Dužina odbojkaškog terena je:", o: ["14 m", "16 m", "18 m", "20 m"], a: 2 },
+            { q: "Svjetsko prvenstvo u nogometu 1990. održano je u:", o: ["Njemačkoj", "Japanu i Južnoj Koreji", "Italiji", "Francuskoj"], a: 2 },
+            { q: "Zimske olimpijske igre (ZOI) u Sarajevu održane su:", o: ["1974. godine", "1984. godine", "1994. godine", "Nisu održane"], a: 1 },
+            { q: "Kazneni udarac (penal) u nogometu izvodi se sa:", o: ["7 m", "10 m", "11 m", "14 m"], a: 2 },
+            { q: "U futsalu (mali nogomet) aut se izvodi:", o: ["Rukom", "Nogom", "Glavom", "Nogom i rukom"], a: 1 },
+            { q: "U kojem sportu je poznat šut pod nazivom „suhi list“?", o: ["Tenis", "Košarka", "Odbojka", "Nogomet"], a: 0 },
+            { q: "Premet naprijed se izvodi u:", o: ["Atletici", "Gimnastici", "Odbojci", "Baseballu"], a: 1 },
+            { q: "Olimpijski stadion u Bosni i Hercegovini je:", o: ["Grbavica", "Asim Ferhatović Hase (Koševo)", "Tušanj", "Bilino Polje"], a: 1 },
+            { q: "Kraul tehnika se izvodi u:", o: ["Atletici", "Plivanju", "Američkom fudbalu", "Gimnastici"], a: 1 }
+        ],
+        "Demokratija": [
+            { q: "John Locke smatra da vlast nastaje:", o: ["Prisilom", "Božijom voljom", "Ugovorom o pristanku", "Kupoprodajnim ugovorom"], a: 2 },
+            { q: "U čemu se razlikuju Hobbesove i Lockeove ideje o ugovoru?", o: ["Potpuno su iste", "Locke smatra da je neprekršiv", "Locke smatra da se može raskinuti ako vlast krši prava, Hobbes ne", "Nisu o tome pisali"], a: 2 },
+            { q: "Zašto Montesquieu zagovara podjelu vlasti?", o: ["Da nijedan ogranak ne može kontrolirati cijelu vlast", "Da bi bilo više zaposlenih", "Radi funkcionalnosti", "Radi nefunkcionalnosti"], a: 0 },
+            { q: "Koja je osnovna svrha Ustava?", o: ["Da imenuje vlast", "Da uspostavi državu", "Da ograniči moć onih na vlasti i zaštiti prava građana", "Da rasporedi obaveze"], a: 2 },
+            { q: "Koja je razlika između Ustava i ostalih zakona?", o: ["Ustav je stariji", "Svi zakoni moraju biti u skladu sa Ustavom", "Ustav sadrži sve zakone", "Nema razlike"], a: 1 },
+            { q: "Događaj koji je značajno utjecao na razvoj ustavne demokratije:", o: ["Magna Karta", "Pad Rimskog carstva", "Povelja Kulina bana", "Otkriće Amerike"], a: 0 },
+            { q: "Politički sistem u SAD-u je:", o: ["Jednopartijski", "Dvopartijski", "Višepartijski", "Multipartijski"], a: 1 },
+            { q: "Ustav je po definiciji:", o: ["Dokument koji određuje principe uređenja vlasti i njena ograničenja", "Odluka ustavnog suda", "Izbor funkcionera", "Isto što i zakon"], a: 0 },
+            { q: "Šta je zakon?", o: ["Pravila ponašanja autoritativno osnovana od društva sa kaznama za kršenje", "Odluka suda", "Pravilnik upravnog odbora", "Isto što i ustav"], a: 0 },
+            { q: "Šta je Brčko u ustavnom uređenju BiH?", o: ["Entitet", "Kanton", "Distrikt", "Općina"], a: 2 },
+            { q: "Političke stranke su:", o: ["Udruženja radnika", "Organizacije koje nastoje putem izbora dobiti vlast", "Udruženja građana", "Humanitarna udruženja"], a: 1 },
+            { q: "Šta je vladavina zakona?", o: ["Vladavina onih koji donose zakone", "Princip da svi članovi društva, uključujući vlast, podliježu zakonu", "Ponašanje građana", "Vlast stručnjaka"], a: 1 },
+            { q: "Izvršnu vlast na državnom nivou u BiH vrši:", o: ["Predsjedništvo BiH", "Parlamentarna skupština", "Sud BiH", "OHR"], a: 0 },
+            { q: "Zakonodavnu vlast na državnom nivou u BiH vrši:", o: ["Predsjedništvo BiH", "Parlamentarna skupština", "Sud BiH", "OHR"], a: 1 },
+            { q: "Sudsku vlast na državnom nivou u BiH vrši:", o: ["Predsjedništvo BiH", "Parlamentarna skupština", "Sud BiH", "OHR"], a: 2 },
+            { q: "Šta je civilno društvo?", o: ["Autonomni, samoorganizirani dio društva izvan političkih institucija", "Civili koji nisu u vojsci", "Grupa pojedinaca koji se druže", "Ljudi koji vole druženje"], a: 0 },
+            { q: "Šta je demokratija?", o: ["Sistem gdje svako radi šta hoće", "Sistem gdje suverenitet pripada narodu direktno ili preko predstavnika", "Sloboda govora", "Sistem gdje svi vladaju"], a: 1 },
+            { q: "Šta je kompromis?", o: ["Isto što i konsenzus", "Pobjeda jačeg", "Dogovor u kojem suprotne strane čine ustupke", "Nije dogovor"], a: 2 },
+            { q: "Diplomatski odnosi su:", o: ["Veze između država i pregovori ambasadora", "Poslovi sa diplomama", "Procedure stjecanja diploma", "Saradnja gradova"], a: 0 },
+            { q: "OHR je:", o: ["Vojni predstavnik NATO-a", "Ured koji nadzire implementaciju mirovnog sporazuma", "Udruženje ambasadora", "Udruženje direktora"], a: 1 },
+            { q: "Šta je OSCE?", o: ["Najveća organizacija za sigurnost u svijetu sa 56 zemalja", "Udruženje građana", "Organizacija za zaštitu okoliša", "Organizacija za životinje"], a: 0 },
+            { q: "Organizacija ujedinjenih naroda (UN) se bavi:", o: ["Ujedinjenjem naroda", "Zaštitom naroda u Evropi", "Očuvanjem mira i zaštitom ljudskih prava u svijetu", "Zaštitom penzionera"], a: 2 },
+            { q: "Prirodna prava čovjeka su najčešće:", o: ["Pravo na život, slobodu i imovinu", "Pravo na posao i zdravstvo", "Pravo na obrazovanje", "Pravo na okupljanje"], a: 0 },
+            { q: "Šta je tranzicija u politici?", o: ["Uspostava tranzita robe", "Tranzitni put", "Prelazak iz jednog društveno-političkog uređenja u drugo", "Tranzitni centar"], a: 2 },
+            { q: "Koja je od navedenih država članica EU?", o: ["BiH", "Belgija", "Norveška", "Švicarska"], a: 1 }
+        ]
+
+        };
+
+        let currentPool = [];
+        let wrongPool = [];
+        let index = 0;
+        let correctCount = 0;
+        let incorrectCount = 0;
+        let isReviewMode = false;
+        let currentSubject = "";
+
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('show'); }
+
+        function loadQuiz(subject) {
+            if (!quizData[subject]) { alert("Podaci za ovaj predmet se učitavaju..."); return; }
+            if (window.innerWidth <= 768) toggleSidebar();
+            
+            currentSubject = subject;
+            currentPool = [...quizData[subject]];
+            resetCounters();
+            
+            document.getElementById('intro-ui').style.display = 'none';
+            document.getElementById('results-ui').style.display = 'none';
+            document.getElementById('quiz-ui').style.display = 'block';
+            
+            updateActiveSidebar(subject);
+            showQuestion();
+        }
+
+        function resetCounters() {
+            index = 0;
+            correctCount = 0;
+            incorrectCount = 0;
+            wrongPool = [];
+            isReviewMode = false;
+        }
+
+        function updateActiveSidebar(subject) {
+            document.querySelectorAll('#sidebar li').forEach(li => {
+                li.classList.remove('active');
+                if(li.innerText === subject || li.innerText === subject.replace(' Jezik', '')) li.classList.add('active');
+            });
+        }
+
+        function showQuestion() {
+            const q = currentPool[index];
+            document.getElementById('progress').innerText = `${isReviewMode ? 'PONAVLJANJE GREŠAKA' : currentSubject} • Pitanje ${index + 1} od ${currentPool.length}`;
+            document.getElementById('question-text').innerHTML = q.q;
+            
+            const container = document.getElementById('options-container');
+            container.innerHTML = '';
+            
+            q.o.forEach((opt, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerHTML = opt;
+                btn.onclick = () => handleAnswer(i, btn);
+                container.appendChild(btn);
+            });
+        }
+
+        function handleAnswer(choice, btn) {
+            const q = currentPool[index];
+            const allBtns = document.querySelectorAll('.option-btn');
+            allBtns.forEach(b => b.disabled = true);
+
+            if (choice === q.a) {
+                btn.classList.add('correct');
+                correctCount++;
+            } else {
+                btn.classList.add('incorrect');
+                allBtns[q.a].classList.add('correct');
+                incorrectCount++;
+                if (!wrongPool.includes(q)) wrongPool.push(q);
+            }
+
+            setTimeout(() => {
+                index++;
+                if (index < currentPool.length) {
+                    showQuestion();
+                } else {
+                    showRoundResults();
+                }
+            }, 1000);
+        }
+
+        function showRoundResults() {
+            document.getElementById('quiz-ui').style.display = 'none';
+            document.getElementById('results-ui').style.display = 'block';
+            document.getElementById('correct-score').innerText = correctCount;
+            document.getElementById('incorrect-score').innerText = incorrectCount;
+
+            const actions = document.getElementById('final-actions');
+            actions.innerHTML = '';
+
+            if (wrongPool.length > 0) {
+                const btnReview = document.createElement('button');
+                btnReview.className = 'action-btn btn-primary';
+                btnReview.innerText = `Ponovi netačna (${wrongPool.length})`;
+                btnReview.onclick = startReview;
+                actions.appendChild(btnReview);
+            }
+
+            const btnEnd = document.createElement('button');
+            btnEnd.className = 'action-btn btn-secondary';
+            btnEnd.innerText = 'Završi i izađi';
+            btnEnd.onclick = () => location.reload();
+            actions.appendChild(btnEnd);
+        }
+
+        function startReview() {
+            currentPool = [...wrongPool];
+            wrongPool = [];
+            index = 0;
+            correctCount = 0;
+            incorrectCount = 0;
+            isReviewMode = true;
+            document.getElementById('results-ui').style.display = 'none';
+            document.getElementById('quiz-ui').style.display = 'block';
+            showQuestion();
+        }
+    </script>
+</body>
+</html>
